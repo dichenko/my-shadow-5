@@ -14,4 +14,20 @@ export const initTelegramApp = () => {
     webApp.ready();
     webApp.expand();
   }
+};
+
+export const saveUserData = async (userData) => {
+  try {
+    const response = await fetch('/api/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error saving user data:', error);
+    return null;
+  }
 }; 

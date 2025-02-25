@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { getTelegramUser } from '../utils/telegram';
+import { getTelegramUser, saveUserData } from '../utils/telegram';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -10,6 +10,7 @@ export default function Home() {
     const telegramUser = getTelegramUser();
     if (telegramUser) {
       setUser(telegramUser);
+      saveUserData(telegramUser);
     }
   }, []);
 
