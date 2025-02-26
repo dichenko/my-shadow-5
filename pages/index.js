@@ -9,6 +9,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [isTelegramUser, setIsTelegramUser] = useState(false);
 
   useEffect(() => {
     async function initApp() {
@@ -24,6 +25,7 @@ export default function Home() {
         if (telegramUser) {
           console.log('Пользователь получен:', telegramUser);
           setUser(telegramUser);
+          setIsTelegramUser(true);
           
           // Сохраняем данные пользователя
           try {
@@ -51,6 +53,7 @@ export default function Home() {
           }
         } else {
           console.log('Пользователь не получен из Telegram WebApp');
+          setIsTelegramUser(false);
           setError('Не удалось получить данные пользователя из Telegram');
         }
       } catch (e) {
@@ -105,11 +108,13 @@ export default function Home() {
             <h1 className="title">
               Привет, {user ? user.first_name : 'гость'}!
             </h1>
-            <div className="admin-link">
-              <Link href="/admin">
-                <a className="button">Перейти в админ-панель</a>
-              </Link>
-            </div>
+            {!isTelegramUser && (
+              <div className="admin-link">
+                <Link href="/admin" className="button">
+                  Перейти в админ-панель
+                </Link>
+              </div>
+            )}
           </>
         )}
       </main>
