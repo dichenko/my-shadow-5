@@ -13,7 +13,7 @@ export default function Admin() {
   
   // Состояния для форм
   const [newPractice, setNewPractice] = useState({ name: '' });
-  const [newBlock, setNewBlock] = useState({ name: '' });
+  const [newBlock, setNewBlock] = useState({ name: '', practiceId: '' });
   const [newQuestion, setNewQuestion] = useState({ 
     text: '', 
     blockId: '', 
@@ -114,7 +114,7 @@ export default function Admin() {
       
       const data = await res.json();
       setBlocks([...blocks, data]);
-      setNewBlock({ name: '' });
+      setNewBlock({ name: '', practiceId: '' });
       showNotification('Блок успешно создан');
     } catch (err) {
       console.error('Ошибка при создании блока:', err);
@@ -295,9 +295,21 @@ export default function Admin() {
                 type="text"
                 placeholder="Название блока"
                 value={newBlock.name}
-                onChange={(e) => setNewBlock({ name: e.target.value })}
+                onChange={(e) => setNewBlock({ ...newBlock, name: e.target.value })}
                 required
               />
+              <select
+                value={newBlock.practiceId}
+                onChange={(e) => setNewBlock({ ...newBlock, practiceId: e.target.value })}
+                required
+              >
+                <option value="">Выберите практику</option>
+                {practices.map((practice) => (
+                  <option key={practice.id} value={practice.id}>
+                    {practice.name}
+                  </option>
+                ))}
+              </select>
               <button type="submit">Добавить</button>
             </form>
             <ul className="admin-list">
