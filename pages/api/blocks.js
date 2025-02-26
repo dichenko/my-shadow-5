@@ -1,120 +1,135 @@
-import prisma from '../../lib/prisma';
+import { PrismaClient } from '@prisma/client';
+import { getSession } from 'next-auth/react';
+
+const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-  const { method } = req;
-
-  try {
-    switch (method) {
-      case 'GET':
-        // Получение блоков
-        if (req.query.id) {
-          // Получение конкретного блока по ID
-          const block = await prisma.block.findUnique({
-            where: {
-              id: parseInt(req.query.id)
-            }
-          });
-          
-          if (!block) {
-            return res.status(404).json({ success: false, message: 'Блок не найден' });
-          }
-          
-          return res.status(200).json(block);
-        } else {
-          // Получение всех блоков
-          const blocks = await prisma.block.findMany({
-            orderBy: [
-              {
-                order: 'asc',
-              },
-              {
-                id: 'asc',
-              },
-            ],
-          });
-          
-          return res.status(200).json(blocks);
-        }
-        
-      case 'POST':
-        // Создание нового блока
-        if (!req.body.name) {
-          return res.status(400).json({ success: false, message: 'Отсутствуют обязательные поля' });
-        }
-        
-        const newBlock = await prisma.block.create({
-          data: {
-            name: req.body.name,
-            order: req.body.order ? parseInt(req.body.order) : null
-          }
-        });
-        
-        return res.status(201).json({
-          success: true,
-          ...newBlock
-        });
-        
-      case 'PUT':
-        // Обновление существующего блока
-        if (!req.body.id) {
-          return res.status(400).json({ success: false, message: 'ID блока не указан' });
-        }
-        
-        const updateData = {};
-        if (req.body.name) updateData.name = req.body.name;
-        if (req.body.order !== undefined) updateData.order = req.body.order ? parseInt(req.body.order) : null;
-        
-        try {
-          const updatedBlock = await prisma.block.update({
-            where: {
-              id: parseInt(req.body.id)
-            },
-            data: updateData
-          });
-          
-          return res.status(200).json({ success: true, message: 'Блок обновлен', block: updatedBlock });
-        } catch (error) {
-          if (error.code === 'P2025') {
-            return res.status(404).json({ success: false, message: 'Блок не найден' });
-          }
-          throw error;
-        }
-        
-      case 'DELETE':
-        // Удаление блока
-        if (!req.query.id) {
-          return res.status(400).json({ success: false, message: 'ID блока не указан' });
-        }
-        
-        const blockId = parseInt(req.query.id);
-        
-        // Сначала удаляем все вопросы, связанные с этим блоком
-        await prisma.question.deleteMany({
-          where: { blockId: blockId }
-        });
-        
-        // Затем удаляем сам блок
-        try {
-          await prisma.block.delete({
-            where: {
-              id: blockId
-            }
-          });
-          
-          return res.status(200).json({ success: true, message: 'Блок и связанные вопросы удалены' });
-        } catch (error) {
-          if (error.code === 'P2025') {
-            return res.status(404).json({ success: false, message: 'Блок не найден' });
-          }
-          throw error;
-        }
-        
-      default:
-        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
-        return res.status(405).json({ success: false, message: `Метод ${method} не разрешен` });
-    }
-  } catch (error) {
-    console.error('Ошибка API блоков:', error);
-    return res.status(500).json({ success: false, message: 'Ошибка сервера', error: error.message });
+  // Проверка аутентификации
+  const session = await getSession({ req });
+  if (!session || !session.user.isAdmin) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
+
+  // Обработка GET запроса
+  if (req.method === 'GET') {
+    try {
+      const blocks = await prisma.block.findMany({
+        orderBy: {
+          order: 'asc',
+        },
+      });
+      
+      return res.status(200).json(blocks);
+    } catch (error) {
+      console.error('Error fetching blocks:', error);
+      return res.status(500).json({ message: 'Failed to fetch blocks' });
+    }
+  }
+  
+  // Обработка POST запроса
+  if (req.method === 'POST') {
+    const { name } = req.body;
+    
+    // Проверка наличия обязательных полей
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+    
+    try {
+      // Получаем максимальный порядок
+      const maxOrderBlock = await prisma.block.findFirst({
+        orderBy: {
+          order: 'desc',
+        },
+      });
+      
+      const newOrder = maxOrderBlock ? maxOrderBlock.order + 1 : 1;
+      
+      // Создаем новый блок
+      const block = await prisma.block.create({
+        data: {
+          name,
+          order: newOrder,
+        },
+      });
+      
+      return res.status(201).json(block);
+    } catch (error) {
+      console.error('Error creating block:', error);
+      return res.status(500).json({ message: 'Failed to create block' });
+    }
+  }
+  
+  // Обработка PUT запроса
+  if (req.method === 'PUT') {
+    const { id, name, order } = req.body;
+    
+    // Проверка наличия обязательных полей
+    if (!id || !name) {
+      return res.status(400).json({ message: 'ID and name are required' });
+    }
+    
+    try {
+      // Обновляем блок
+      const block = await prisma.block.update({
+        where: { id: parseInt(id) },
+        data: {
+          name,
+          order: order ? parseInt(order) : undefined,
+        },
+      });
+      
+      return res.status(200).json(block);
+    } catch (error) {
+      console.error('Error updating block:', error);
+      return res.status(500).json({ message: 'Failed to update block' });
+    }
+  }
+  
+  // Обработка DELETE запроса
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({ message: 'ID is required' });
+    }
+    
+    try {
+      // Проверяем, есть ли вопросы, связанные с этим блоком
+      const questionsCount = await prisma.question.count({
+        where: { blockId: parseInt(id) },
+      });
+      
+      if (questionsCount > 0) {
+        return res.status(400).json({ 
+          message: 'Cannot delete block with associated questions. Delete the questions first.' 
+        });
+      }
+      
+      // Удаляем блок
+      await prisma.block.delete({
+        where: { id: parseInt(id) },
+      });
+      
+      // Перенумеруем оставшиеся блоки
+      const remainingBlocks = await prisma.block.findMany({
+        orderBy: { order: 'asc' },
+      });
+      
+      for (let i = 0; i < remainingBlocks.length; i++) {
+        await prisma.block.update({
+          where: { id: remainingBlocks[i].id },
+          data: { order: i + 1 },
+        });
+      }
+      
+      return res.status(200).json({ message: 'Block deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting block:', error);
+      return res.status(500).json({ message: 'Failed to delete block' });
+    }
+  }
+  
+  // Если метод не поддерживается
+  return res.status(405).json({ message: 'Method not allowed' });
 } 

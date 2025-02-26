@@ -13,7 +13,7 @@ export default function Admin() {
   
   // Состояния для форм
   const [newPractice, setNewPractice] = useState({ name: '' });
-  const [newBlock, setNewBlock] = useState({ name: '', practiceId: '' });
+  const [newBlock, setNewBlock] = useState({ name: '' });
   const [newQuestion, setNewQuestion] = useState({ 
     text: '', 
     blockId: '', 
@@ -114,7 +114,7 @@ export default function Admin() {
       
       const data = await res.json();
       setBlocks([...blocks, data]);
-      setNewBlock({ name: '', practiceId: '' });
+      setNewBlock({ name: '' });
       showNotification('Блок успешно создан');
     } catch (err) {
       console.error('Ошибка при создании блока:', err);
@@ -298,18 +298,6 @@ export default function Admin() {
                 onChange={(e) => setNewBlock({ ...newBlock, name: e.target.value })}
                 required
               />
-              <select
-                value={newBlock.practiceId}
-                onChange={(e) => setNewBlock({ ...newBlock, practiceId: e.target.value })}
-                required
-              >
-                <option value="">Выберите практику</option>
-                {practices.map((practice) => (
-                  <option key={practice.id} value={practice.id}>
-                    {practice.name}
-                  </option>
-                ))}
-              </select>
               <button type="submit">Добавить</button>
             </form>
             <ul className="admin-list">
@@ -409,21 +397,31 @@ export default function Admin() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 2rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid #eaeaea;
         }
         
         .logout-button {
-          padding: 0.5rem 1rem;
-          background-color: #e53e3e;
+          background-color: #f44336;
           color: white;
           border: none;
+          padding: 0.5rem 1rem;
           border-radius: 4px;
           cursor: pointer;
         }
         
-        .logout-button:hover {
-          background-color: #c53030;
+        .notification {
+          background-color: #4CAF50;
+          color: white;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          border-radius: 4px;
+        }
+        
+        .error {
+          background-color: #f44336;
+          color: white;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          border-radius: 4px;
         }
         
         .admin-content {
@@ -433,16 +431,23 @@ export default function Admin() {
         }
         
         .admin-section {
-          background: white;
+          background-color: #f5f5f5;
           padding: 1.5rem;
           border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
+        .admin-section h2 {
+          margin-top: 0;
+          margin-bottom: 1rem;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 0.5rem;
+        }
+        
         .admin-form {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.75rem;
           margin-bottom: 1.5rem;
         }
         
@@ -461,17 +466,13 @@ export default function Admin() {
         }
         
         .admin-form button {
-          padding: 0.75rem;
-          background-color: #0070f3;
+          background-color: #4CAF50;
           color: white;
           border: none;
+          padding: 0.75rem;
           border-radius: 4px;
-          font-size: 1rem;
           cursor: pointer;
-        }
-        
-        .admin-form button:hover {
-          background-color: #0060df;
+          font-size: 1rem;
         }
         
         .admin-list {
@@ -485,7 +486,7 @@ export default function Admin() {
           justify-content: space-between;
           align-items: center;
           padding: 0.75rem;
-          border-bottom: 1px solid #eaeaea;
+          border-bottom: 1px solid #ddd;
         }
         
         .list-item:last-child {
@@ -497,35 +498,23 @@ export default function Admin() {
         }
         
         .delete-button {
-          padding: 0.4rem 0.75rem;
-          background-color: #e53e3e;
+          background-color: #f44336;
           color: white;
           border: none;
-          border-radius: 4px;
-          font-size: 0.875rem;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
           cursor: pointer;
           margin-left: 1rem;
         }
         
-        .delete-button:hover {
-          background-color: #c53030;
-        }
-        
-        .error {
-          color: #e53e3e;
-          padding: 1rem;
-          background-color: #fff5f5;
-          border-radius: 4px;
-          margin-bottom: 1rem;
-        }
-        
-        .notification {
-          color: #2f855a;
-          padding: 1rem;
-          background-color: #f0fff4;
-          border-radius: 4px;
-          margin-bottom: 1rem;
-          text-align: center;
+        @media (max-width: 768px) {
+          .admin-content {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>
