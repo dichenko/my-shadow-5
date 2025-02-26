@@ -6,6 +6,8 @@ export default async function handler(req, res) {
       return getQuestions(req, res);
     case 'POST':
       return createQuestion(req, res);
+    case 'DELETE':
+      return deleteQuestion(req, res);
     default:
       return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -96,5 +98,46 @@ async function createQuestion(req, res) {
   } catch (error) {
     console.error('Ошибка при создании вопроса:', error);
     return res.status(500).json({ error: 'Failed to create question', details: error.message });
+  }
+}
+
+// Удаление вопроса
+async function deleteQuestion(req, res) {
+  try {
+    const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Question ID is required' });
+    }
+    
+    const questionId = parseInt(id);
+    
+    // Проверяем, есть ли ответы, связанные с этим вопросом
+    const answersCount = await prisma.answer.count({
+      where: { questionId },
+    });
+    
+    if (answersCount > 0) {
+      // Удаляем связанные ответы
+      await prisma.answer.deleteMany({
+        where: { questionId },
+      });
+    }
+    
+    // Удаляем вопрос
+    await prisma.question.delete({
+      where: { id: questionId },
+    });
+    
+    return res.status(200).json({ success: true, message: 'Вопрос успешно удален' });
+  } catch (error) {
+    console.error('Ошибка при удалении вопроса:', error);
+    
+    // Обработка ошибки, если вопрос не найден
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Question not found' });
+    }
+    
+    return res.status(500).json({ error: 'Failed to delete question', details: error.message });
   }
 } 

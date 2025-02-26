@@ -8,6 +8,7 @@ export default function Admin() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notification, setNotification] = useState(null);
   const router = useRouter();
   
   // Состояния для форм
@@ -91,6 +92,7 @@ export default function Admin() {
       const data = await res.json();
       setPractices([...practices, data]);
       setNewPractice({ name: '' });
+      showNotification('Практика успешно создана');
     } catch (err) {
       console.error('Ошибка при создании практики:', err);
       setError('Не удалось создать практику');
@@ -113,6 +115,7 @@ export default function Admin() {
       const data = await res.json();
       setBlocks([...blocks, data]);
       setNewBlock({ name: '' });
+      showNotification('Блок успешно создан');
     } catch (err) {
       console.error('Ошибка при создании блока:', err);
       setError('Не удалось создать блок');
@@ -147,10 +150,89 @@ export default function Admin() {
         practiceId: '', 
         role: 'none' 
       });
+      showNotification('Вопрос успешно создан');
     } catch (err) {
       console.error('Ошибка при создании вопроса:', err);
       setError('Не удалось создать вопрос');
     }
+  };
+  
+  // Функции удаления
+  const handleDeletePractice = async (id) => {
+    if (!confirm('Вы уверены, что хотите удалить эту практику?')) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/practices?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Не удалось удалить практику');
+      }
+      
+      setPractices(practices.filter(practice => practice.id !== id));
+      showNotification('Практика успешно удалена');
+    } catch (err) {
+      console.error('Ошибка при удалении практики:', err);
+      setError(err.message || 'Не удалось удалить практику');
+    }
+  };
+  
+  const handleDeleteBlock = async (id) => {
+    if (!confirm('Вы уверены, что хотите удалить этот блок?')) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/blocks?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Не удалось удалить блок');
+      }
+      
+      setBlocks(blocks.filter(block => block.id !== id));
+      showNotification('Блок успешно удален');
+    } catch (err) {
+      console.error('Ошибка при удалении блока:', err);
+      setError(err.message || 'Не удалось удалить блок');
+    }
+  };
+  
+  const handleDeleteQuestion = async (id) => {
+    if (!confirm('Вы уверены, что хотите удалить этот вопрос?')) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/questions?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Не удалось удалить вопрос');
+      }
+      
+      setQuestions(questions.filter(question => question.id !== id));
+      showNotification('Вопрос успешно удален');
+    } catch (err) {
+      console.error('Ошибка при удалении вопроса:', err);
+      setError(err.message || 'Не удалось удалить вопрос');
+    }
+  };
+  
+  // Функция для отображения уведомлений
+  const showNotification = (message) => {
+    setNotification(message);
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000);
   };
   
   return (
@@ -165,10 +247,16 @@ export default function Admin() {
         <button onClick={handleLogout} className="logout-button">Выйти</button>
       </header>
       
+      {notification && (
+        <div className="notification">{notification}</div>
+      )}
+      
+      {error && (
+        <div className="error">{error}</div>
+      )}
+      
       {loading ? (
         <p>Загрузка...</p>
-      ) : error ? (
-        <p className="error">{error}</p>
       ) : (
         <div className="admin-content">
           <div className="admin-section">
@@ -185,8 +273,16 @@ export default function Admin() {
             </form>
             <ul className="admin-list">
               {practices.map((practice) => (
-                <li key={practice.id}>
-                  {practice.name} (ID: {practice.id})
+                <li key={practice.id} className="list-item">
+                  <div className="item-content">
+                    {practice.name} (ID: {practice.id})
+                  </div>
+                  <button 
+                    onClick={() => handleDeletePractice(practice.id)}
+                    className="delete-button"
+                  >
+                    Удалить
+                  </button>
                 </li>
               ))}
             </ul>
@@ -206,8 +302,16 @@ export default function Admin() {
             </form>
             <ul className="admin-list">
               {blocks.map((block) => (
-                <li key={block.id}>
-                  {block.name} (ID: {block.id})
+                <li key={block.id} className="list-item">
+                  <div className="item-content">
+                    {block.name} (ID: {block.id})
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteBlock(block.id)}
+                    className="delete-button"
+                  >
+                    Удалить
+                  </button>
                 </li>
               ))}
             </ul>
@@ -258,14 +362,22 @@ export default function Admin() {
             </form>
             <ul className="admin-list">
               {questions.map((question) => (
-                <li key={question.id}>
-                  <strong>ID: {question.id}</strong> - {question.text.substring(0, 50)}...
-                  <br />
-                  <small>
-                    Блок: {blocks.find(b => b.id === question.blockId)?.name || 'Неизвестно'}, 
-                    Практика: {practices.find(p => p.id === question.practiceId)?.name || 'Неизвестно'},
-                    Роль: {question.role}
-                  </small>
+                <li key={question.id} className="list-item">
+                  <div className="item-content">
+                    <strong>ID: {question.id}</strong> - {question.text.substring(0, 50)}...
+                    <br />
+                    <small>
+                      Блок: {blocks.find(b => b.id === question.blockId)?.name || 'Неизвестно'}, 
+                      Практика: {practices.find(p => p.id === question.practiceId)?.name || 'Неизвестно'},
+                      Роль: {question.role}
+                    </small>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteQuestion(question.id)}
+                    className="delete-button"
+                  >
+                    Удалить
+                  </button>
                 </li>
               ))}
             </ul>
@@ -356,13 +468,35 @@ export default function Admin() {
           margin: 0;
         }
         
-        .admin-list li {
+        .list-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           padding: 0.75rem;
           border-bottom: 1px solid #eaeaea;
         }
         
-        .admin-list li:last-child {
+        .list-item:last-child {
           border-bottom: none;
+        }
+        
+        .item-content {
+          flex: 1;
+        }
+        
+        .delete-button {
+          padding: 0.4rem 0.75rem;
+          background-color: #e53e3e;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          font-size: 0.875rem;
+          cursor: pointer;
+          margin-left: 1rem;
+        }
+        
+        .delete-button:hover {
+          background-color: #c53030;
         }
         
         .error {
@@ -371,6 +505,15 @@ export default function Admin() {
           background-color: #fff5f5;
           border-radius: 4px;
           margin-bottom: 1rem;
+        }
+        
+        .notification {
+          color: #2f855a;
+          padding: 1rem;
+          background-color: #f0fff4;
+          border-radius: 4px;
+          margin-bottom: 1rem;
+          text-align: center;
         }
       `}</style>
     </div>

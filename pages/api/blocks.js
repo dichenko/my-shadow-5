@@ -6,6 +6,8 @@ export default async function handler(req, res) {
       return getBlocks(req, res);
     case 'POST':
       return createBlock(req, res);
+    case 'DELETE':
+      return deleteBlock(req, res);
     default:
       return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -46,5 +48,46 @@ async function createBlock(req, res) {
   } catch (error) {
     console.error('Ошибка при создании блока:', error);
     return res.status(500).json({ error: 'Failed to create block', details: error.message });
+  }
+}
+
+// Удаление блока
+async function deleteBlock(req, res) {
+  try {
+    const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Block ID is required' });
+    }
+    
+    const blockId = parseInt(id);
+    
+    // Проверяем, есть ли вопросы, связанные с этим блоком
+    const questionsCount = await prisma.question.count({
+      where: { blockId },
+    });
+    
+    if (questionsCount > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete block with associated questions',
+        message: 'Невозможно удалить блок, так как с ним связаны вопросы. Сначала удалите все вопросы этого блока.'
+      });
+    }
+    
+    // Удаляем блок
+    await prisma.block.delete({
+      where: { id: blockId },
+    });
+    
+    return res.status(200).json({ success: true, message: 'Блок успешно удален' });
+  } catch (error) {
+    console.error('Ошибка при удалении блока:', error);
+    
+    // Обработка ошибки, если блок не найден
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Block not found' });
+    }
+    
+    return res.status(500).json({ error: 'Failed to delete block', details: error.message });
   }
 } 
