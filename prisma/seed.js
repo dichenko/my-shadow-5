@@ -137,19 +137,10 @@ async function createQuestionTable() {
           "role" TEXT NOT NULL DEFAULT 'none',
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          CONSTRAINT "Question_pkey" PRIMARY KEY ("id")
+          CONSTRAINT "Question_pkey" PRIMARY KEY ("id"),
+          CONSTRAINT "Question_blockId_fkey" FOREIGN KEY ("blockId") REFERENCES "Block"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+          CONSTRAINT "Question_practiceId_fkey" FOREIGN KEY ("practiceId") REFERENCES "Practice"("id") ON DELETE RESTRICT ON UPDATE CASCADE
         );
-      `;
-      
-      // Создаем внешние ключи
-      await prisma.$executeRaw`
-        ALTER TABLE "Question" ADD CONSTRAINT "Question_blockId_fkey" 
-        FOREIGN KEY ("blockId") REFERENCES "Block"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-      `;
-      
-      await prisma.$executeRaw`
-        ALTER TABLE "Question" ADD CONSTRAINT "Question_practiceId_fkey" 
-        FOREIGN KEY ("practiceId") REFERENCES "Practice"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
       `;
       
       console.log('Таблица Question успешно создана');
@@ -178,19 +169,10 @@ async function createAnswerTable() {
           "text" TEXT NOT NULL,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          CONSTRAINT "Answer_pkey" PRIMARY KEY ("id")
+          CONSTRAINT "Answer_pkey" PRIMARY KEY ("id"),
+          CONSTRAINT "Answer_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+          CONSTRAINT "Answer_userId_fkey" FOREIGN KEY ("userId") REFERENCES "TelegramUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE
         );
-      `;
-      
-      // Создаем внешние ключи
-      await prisma.$executeRaw`
-        ALTER TABLE "Answer" ADD CONSTRAINT "Answer_questionId_fkey" 
-        FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-      `;
-      
-      await prisma.$executeRaw`
-        ALTER TABLE "Answer" ADD CONSTRAINT "Answer_userId_fkey" 
-        FOREIGN KEY ("userId") REFERENCES "TelegramUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
       `;
       
       console.log('Таблица Answer успешно создана');

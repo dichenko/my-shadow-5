@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { getTelegramUser, saveUserData, initTelegramApp, getUserPhotoUrl } from '../utils/telegram';
 
 export default function Home() {
@@ -100,9 +101,16 @@ export default function Home() {
         ) : error ? (
           <p className="error">{error}</p>
         ) : (
-          <h1 className="title">
-            Привет, {user ? user.first_name : 'гость'}!
-          </h1>
+          <>
+            <h1 className="title">
+              Привет, {user ? user.first_name : 'гость'}!
+            </h1>
+            <div className="admin-link">
+              <Link href="/admin">
+                <a className="button">Перейти в админ-панель</a>
+              </Link>
+            </div>
+          </>
         )}
       </main>
 
@@ -131,6 +139,7 @@ export default function Home() {
           line-height: 1.15;
           font-size: 4rem;
           text-align: center;
+          margin-bottom: 2rem;
         }
         .loading {
           font-size: 1.5rem;
@@ -180,6 +189,24 @@ export default function Home() {
           100% {
             opacity: 0.6;
           }
+        }
+        .admin-link {
+          margin-top: 2rem;
+        }
+        .button {
+          background-color: var(--tg-theme-button-color, #2481cc);
+          color: var(--tg-theme-button-text-color, #ffffff);
+          border: none;
+          border-radius: 4px;
+          padding: 0.75rem 1.5rem;
+          cursor: pointer;
+          font-size: 1rem;
+          text-decoration: none;
+          transition: background-color 0.3s;
+          display: inline-block;
+        }
+        .button:hover {
+          background-color: var(--tg-theme-button-color, #1a6baa);
         }
       `}</style>
     </div>
