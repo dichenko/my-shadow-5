@@ -1,23 +1,17 @@
-import { useState } from 'react';
 import Link from 'next/link';
 
 export default function BlocksList({ blocks = [] }) {
-  // Массив градиентов для блоков
+  // Массив градиентов для блоков в минималистичном стиле
   const gradients = [
-    'linear-gradient(135deg, #FF6B8B 0%, #FF8E9E 100%)',
-    'linear-gradient(135deg, #4A90E2 0%, #6BA5E7 100%)',
-    'linear-gradient(135deg, #9B6B9E 0%, #B37FB6 100%)',
-    'linear-gradient(135deg, #FFB347 0%, #FFCC33 100%)',
-    'linear-gradient(135deg, #66BB6A 0%, #98EE99 100%)'
+    'linear-gradient(135deg, #E0E0E0 0%, #F5F5F5 100%)',
+    'linear-gradient(135deg, #D4D4D4 0%, #E8E8E8 100%)',
+    'linear-gradient(135deg, #CCCCCC 0%, #E0E0E0 100%)',
+    'linear-gradient(135deg, #C4C4C4 0%, #D8D8D8 100%)',
+    'linear-gradient(135deg, #BCBCBC 0%, #D0D0D0 100%)'
   ];
 
   return (
-    <div className="blocks-container">
-      <div className="header">
-        <h1>Let's Play</h1>
-        <p>Be the first!</p>
-      </div>
-      
+    <div className="blocks-container">      
       {blocks.length === 0 ? (
         <div className="empty-state">
           <p>Блоки вопросов не найдены</p>
@@ -34,7 +28,7 @@ export default function BlocksList({ blocks = [] }) {
                   <span className="block-questions-count">{block.questionsCount || 0} вопросов</span>
                 </div>
                 <div className="block-arrow">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
@@ -46,24 +40,8 @@ export default function BlocksList({ blocks = [] }) {
 
       <style jsx>{`
         .blocks-container {
-          padding: 1.5rem;
+          padding: 1rem;
           padding-bottom: 5rem;
-        }
-        
-        .header {
-          margin-bottom: 2rem;
-        }
-
-        .header h1 {
-          font-size: 2.5rem;
-          font-weight: bold;
-          color: #FF6B8B;
-          margin-bottom: 0.5rem;
-        }
-
-        .header p {
-          font-size: 1rem;
-          color: var(--tg-theme-hint-color);
         }
         
         .empty-state {
@@ -75,20 +53,20 @@ export default function BlocksList({ blocks = [] }) {
         .blocks-list {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.75rem;
         }
         
         .block-card {
-          padding: 1.5rem;
-          border-radius: 20px;
+          padding: 1.25rem;
+          border-radius: 12px;
           text-decoration: none;
-          color: white;
-          transition: transform 0.2s, box-shadow 0.2s;
+          color: var(--tg-theme-text-color);
+          transition: transform 0.2s;
+          border: 1px solid rgba(0, 0, 0, 0.05);
         }
         
-        .block-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .block-card:active {
+          transform: scale(0.98);
         }
         
         .block-content {
@@ -102,30 +80,19 @@ export default function BlocksList({ blocks = [] }) {
         }
         
         .block-name {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 0 0 0.5rem 0;
+          font-size: 1.1rem;
+          font-weight: 500;
+          margin: 0 0 0.25rem 0;
         }
         
         .block-questions-count {
-          font-size: 0.9rem;
-          opacity: 0.9;
+          font-size: 0.875rem;
+          color: var(--tg-theme-hint-color);
         }
         
         .block-arrow {
           margin-left: 1rem;
-        }
-        
-        @media (min-width: 640px) {
-          .blocks-list {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        
-        @media (min-width: 1024px) {
-          .blocks-list {
-            grid-template-columns: repeat(3, 1fr);
-          }
+          opacity: 0.5;
         }
       `}</style>
     </div>

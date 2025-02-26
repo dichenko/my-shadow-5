@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import { initTelegramApp, saveUserData } from '../utils/telegram';
 import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
-import UserPhoto from '../components/UserPhoto';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
 
@@ -80,15 +79,6 @@ export default function Questions() {
         <meta name="description" content="Блоки вопросов MyShadowApp" />
       </Head>
 
-      <div className="top-icons">
-        <div className="icon-button">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
-        <UserPhoto />
-      </div>
-
       <main className="main">
         {error ? (
           <div className="error">{error}</div>
@@ -110,34 +100,6 @@ export default function Questions() {
           background-color: var(--tg-theme-bg-color, #ffffff);
           color: var(--tg-theme-text-color, #000000);
           position: relative;
-        }
-        
-        .top-icons {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          display: flex;
-          gap: 1rem;
-          z-index: 10;
-        }
-
-        .icon-button {
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--tg-theme-button-color, #2481cc);
-          background: var(--tg-theme-bg-color, #ffffff);
-          border-radius: 50%;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .icon-button:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         
         .main {
