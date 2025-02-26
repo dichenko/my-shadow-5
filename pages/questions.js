@@ -5,13 +5,15 @@ import { initTelegramApp, saveUserData } from '../utils/telegram';
 import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
 import UserPhoto from '../components/UserPhoto';
-import LevelsList from '../components/LevelsList';
+import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
 
 export default function Questions() {
   const { user, loading: userLoading } = useUser();
   const [telegramInitialized, setTelegramInitialized] = useState(false);
   const [error, setError] = useState(null);
+  const [blocks, setBlocks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,6 +46,27 @@ export default function Questions() {
     initApp();
   }, [user]);
 
+  useEffect(() => {
+    async function fetchBlocks() {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/blocks-with-questions');
+        if (!response.ok) {
+          throw new Error('Не удалось загрузить блоки вопросов');
+        }
+        const data = await response.json();
+        setBlocks(data);
+      } catch (e) {
+        console.error('Ошибка при загрузке блоков:', e);
+        setError('Не удалось загрузить блоки вопросов');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBlocks();
+  }, []);
+
   // Если данные из Telegram не получены в течение 5 секунд, показываем экран с предложением перейти в бот
   if (userLoading && !user) {
     return <LoadingScreen timeout={5000} />;
@@ -54,7 +77,7 @@ export default function Questions() {
       <Head>
         <title>Вопросы | MyShadowApp</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
-        <meta name="description" content="Уровни вопросов MyShadowApp" />
+        <meta name="description" content="Блоки вопросов MyShadowApp" />
       </Head>
 
       <div className="top-icons">
@@ -69,8 +92,10 @@ export default function Questions() {
       <main className="main">
         {error ? (
           <div className="error">{error}</div>
+        ) : loading ? (
+          <div className="loading">Загрузка блоков...</div>
         ) : (
-          <LevelsList />
+          <BlocksList blocks={blocks} />
         )}
       </main>
 
@@ -123,6 +148,12 @@ export default function Questions() {
           padding: 2rem;
           text-align: center;
           color: var(--tg-theme-destructive-text-color, #ff0000);
+        }
+
+        .loading {
+          padding: 2rem;
+          text-align: center;
+          color: var(--tg-theme-hint-color);
         }
       `}</style>
     </div>
