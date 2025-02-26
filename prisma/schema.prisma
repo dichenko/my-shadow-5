@@ -9,8 +9,7 @@ datasource db {
 }
 
 model TelegramUser {
-  id            Int      @id @default(autoincrement())
-  tgId          Int      @unique
+  id            Int      @id
   firstName     String?
   lastName      String?
   username      String?
@@ -26,16 +25,19 @@ model Practice {
   name      String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  questions  Question[]
+  blocks    Block[]
+  questions Question[]
 }
 
 model Block {
-  id        Int       @id @default(autoincrement())
-  name      String
-  order     Int?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         Int       @id @default(autoincrement())
+  name       String
+  order      Int?
+  practiceId Int
+  practice   Practice  @relation(fields: [practiceId], references: [id])
   questions  Question[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model Question {
@@ -61,6 +63,6 @@ model Answer {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   
-  question   Question  @relation(fields: [questionId], references: [id])
+  question   Question     @relation(fields: [questionId], references: [id])
   user       TelegramUser @relation(fields: [userId], references: [id])
 } 
