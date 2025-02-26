@@ -26,18 +26,28 @@ export default async function handler(req, res) {
             where: { 
               practiceId: parseInt(req.query.practiceId) 
             },
-            orderBy: {
-              createdAt: 'desc'
-            }
+            orderBy: [
+              {
+                order: 'asc',
+              },
+              {
+                id: 'asc',
+              },
+            ],
           });
           
           return res.status(200).json(blocks);
         } else {
           // Получение всех блоков
           const blocks = await prisma.block.findMany({
-            orderBy: {
-              createdAt: 'desc'
-            }
+            orderBy: [
+              {
+                order: 'asc',
+              },
+              {
+                id: 'asc',
+              },
+            ],
           });
           
           return res.status(200).json(blocks);
@@ -52,7 +62,8 @@ export default async function handler(req, res) {
         const newBlock = await prisma.block.create({
           data: {
             name: req.body.name,
-            practiceId: parseInt(req.body.practiceId)
+            practiceId: parseInt(req.body.practiceId),
+            order: req.body.order ? parseInt(req.body.order) : null
           }
         });
         
@@ -70,6 +81,7 @@ export default async function handler(req, res) {
         const updateData = {};
         if (req.body.name) updateData.name = req.body.name;
         if (req.body.practiceId) updateData.practiceId = parseInt(req.body.practiceId);
+        if (req.body.order !== undefined) updateData.order = req.body.order ? parseInt(req.body.order) : null;
         
         try {
           const updatedBlock = await prisma.block.update({

@@ -26,18 +26,28 @@ export default async function handler(req, res) {
             where: { 
               blockId: parseInt(req.query.blockId) 
             },
-            orderBy: {
-              createdAt: 'desc'
-            }
+            orderBy: [
+              {
+                order: 'asc',
+              },
+              {
+                id: 'asc',
+              },
+            ],
           });
           
           return res.status(200).json(questions);
         } else {
           // Получение всех вопросов
           const questions = await prisma.question.findMany({
-            orderBy: {
-              createdAt: 'desc'
-            }
+            orderBy: [
+              {
+                order: 'asc',
+              },
+              {
+                id: 'asc',
+              },
+            ],
           });
           
           return res.status(200).json(questions);
@@ -54,7 +64,8 @@ export default async function handler(req, res) {
             text: req.body.text,
             role: req.body.role,
             blockId: parseInt(req.body.blockId),
-            practiceId: parseInt(req.body.practiceId)
+            practiceId: parseInt(req.body.practiceId),
+            order: req.body.order ? parseInt(req.body.order) : null
           }
         });
         
@@ -74,6 +85,7 @@ export default async function handler(req, res) {
         if (req.body.role) updateData.role = req.body.role;
         if (req.body.blockId) updateData.blockId = parseInt(req.body.blockId);
         if (req.body.practiceId) updateData.practiceId = parseInt(req.body.practiceId);
+        if (req.body.order !== undefined) updateData.order = req.body.order ? parseInt(req.body.order) : null;
         
         try {
           const updatedQuestion = await prisma.question.update({

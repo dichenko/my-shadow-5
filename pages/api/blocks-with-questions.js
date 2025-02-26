@@ -6,11 +6,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Получаем все блоки, сортируем по возрастанию ID
+    // Получаем все блоки, сортируем сначала по order (null в конце), потом по id
     const blocks = await prisma.block.findMany({
-      orderBy: {
-        id: 'asc',
-      },
+      orderBy: [
+        {
+          order: 'asc',
+        },
+        {
+          id: 'asc',
+        },
+      ],
     });
 
     // Для каждого блока получаем количество вопросов
