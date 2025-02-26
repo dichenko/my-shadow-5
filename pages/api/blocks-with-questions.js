@@ -6,10 +6,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Получаем все блоки
+    // Получаем все блоки, сортируем по возрастанию ID
     const blocks = await prisma.block.findMany({
       orderBy: {
-        createdAt: 'desc',
+        id: 'asc',
       },
     });
 
