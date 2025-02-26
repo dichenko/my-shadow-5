@@ -10,8 +10,6 @@ datasource db {
 
 model TelegramUser {
   id            Int      @id
-  firstName     String?
-  lastName      String?
   username      String?
   languageCode  String?
   firstVisit    DateTime @default(now())
@@ -23,9 +21,6 @@ model TelegramUser {
 model Practice {
   id        Int       @id @default(autoincrement())
   name      String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  blocks    Block[]
   questions Question[]
 }
 
@@ -33,11 +28,7 @@ model Block {
   id         Int       @id @default(autoincrement())
   name       String
   order      Int?
-  practiceId Int
-  practice   Practice  @relation(fields: [practiceId], references: [id])
   questions  Question[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
 }
 
 model Question {
@@ -47,8 +38,6 @@ model Question {
   blockId    Int
   practiceId Int
   role       String    @default("none")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
   
   block      Block     @relation(fields: [blockId], references: [id])
   practice   Practice  @relation(fields: [practiceId], references: [id])

@@ -14,9 +14,7 @@ async function fillOrderFields() {
         await prisma.block.update({
           where: { id: block.id },
           data: { 
-            order: block.id,
-            // Если practiceId отсутствует, устанавливаем значение по умолчанию 1
-            practiceId: block.practiceId || 1
+            order: block.id
           }
         });
         console.log(`Обновлен блок ${block.id}`);
@@ -34,9 +32,7 @@ async function fillOrderFields() {
         await prisma.question.update({
           where: { id: question.id },
           data: { 
-            order: question.id,
-            // Если practiceId отсутствует, берем его из связанного блока
-            practiceId: question.practiceId || 1
+            order: question.id
           }
         });
         console.log(`Обновлен вопрос ${question.id}`);

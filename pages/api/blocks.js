@@ -20,23 +20,6 @@ export default async function handler(req, res) {
           }
           
           return res.status(200).json(block);
-        } else if (req.query.practiceId) {
-          // Получение всех блоков для конкретной практики
-          const blocks = await prisma.block.findMany({
-            where: { 
-              practiceId: parseInt(req.query.practiceId) 
-            },
-            orderBy: [
-              {
-                order: 'asc',
-              },
-              {
-                id: 'asc',
-              },
-            ],
-          });
-          
-          return res.status(200).json(blocks);
         } else {
           // Получение всех блоков
           const blocks = await prisma.block.findMany({
@@ -55,14 +38,13 @@ export default async function handler(req, res) {
         
       case 'POST':
         // Создание нового блока
-        if (!req.body.name || !req.body.practiceId) {
+        if (!req.body.name) {
           return res.status(400).json({ success: false, message: 'Отсутствуют обязательные поля' });
         }
         
         const newBlock = await prisma.block.create({
           data: {
             name: req.body.name,
-            practiceId: parseInt(req.body.practiceId),
             order: req.body.order ? parseInt(req.body.order) : null
           }
         });
@@ -80,7 +62,6 @@ export default async function handler(req, res) {
         
         const updateData = {};
         if (req.body.name) updateData.name = req.body.name;
-        if (req.body.practiceId) updateData.practiceId = parseInt(req.body.practiceId);
         if (req.body.order !== undefined) updateData.order = req.body.order ? parseInt(req.body.order) : null;
         
         try {
