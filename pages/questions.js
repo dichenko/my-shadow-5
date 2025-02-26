@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { getTelegramUser, saveUserData, initTelegramApp, getUserPhotoUrl } from '../utils/telegram';
+import { initTelegramApp, saveUserData } from '../utils/telegram';
+import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
 import UserPhoto from '../components/UserPhoto';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
 
 export default function Questions() {
-  const [user, setUser] = useState(null);
-  const [photoUrl, setPhotoUrl] = useState(null);
+  const { user, loading: userLoading } = useUser();
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,39 +23,19 @@ export default function Questions() {
         
         // Инициализируем Telegram WebApp
         initTelegramApp();
+        setTelegramInitialized(true);
         
-        // Получаем данные пользователя из Telegram WebApp
-        const telegramUser = getTelegramUser();
-        
-        if (telegramUser) {
-          console.log('Пользователь получен:', telegramUser);
-          setUser(telegramUser);
-          setTelegramInitialized(true);
-          
-          // Сохраняем данные пользователя
+        // Сохраняем данные пользователя, если пользователь получен
+        if (user) {
           try {
-            const savedUser = await saveUserData(telegramUser);
+            const savedUser = await saveUserData(user);
             console.log('Данные пользователя сохранены:', savedUser);
-            
-            // Получаем URL фотографии пользователя
-            try {
-              const userPhotoUrl = await getUserPhotoUrl(telegramUser.id);
-              if (userPhotoUrl) {
-                setPhotoUrl(userPhotoUrl);
-                console.log('Получен URL фотографии пользователя:', userPhotoUrl);
-              } else {
-                console.log('Фотография пользователя не найдена');
-              }
-            } catch (photoError) {
-              console.error('Ошибка при получении фотографии пользователя:', photoError);
-            }
           } catch (saveError) {
             console.error('Ошибка при сохранении данных пользователя:', saveError);
             setError('Не удалось сохранить данные пользователя');
           }
         } else {
-          console.log('Пользователь не получен из Telegram WebApp');
-          setError('Не удалось получить данные пользователя из Telegram');
+          console.log('Пользователь не получен из контекста');
         }
       } catch (e) {
         console.error('Ошибка при инициализации приложения:', e);
@@ -64,7 +44,7 @@ export default function Questions() {
     }
     
     initApp();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     async function fetchBlocks() {
@@ -89,7 +69,7 @@ export default function Questions() {
   }, [telegramInitialized]);
 
   // Если данные из Telegram не получены в течение 5 секунд, показываем экран с предложением перейти в бот
-  if (!telegramInitialized && !user) {
+  if (userLoading && !user) {
     return <LoadingScreen timeout={5000} />;
   }
 
@@ -101,7 +81,7 @@ export default function Questions() {
         <meta name="description" content="Блоки вопросов MyShadowApp" />
       </Head>
 
-      <UserPhoto user={user} photoUrl={photoUrl} />
+      <UserPhoto />
 
       <main className="main">
         {loading ? (

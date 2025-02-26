@@ -1,28 +1,9 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { getTelegramUser, getUserPhotoUrl } from '../utils/telegram';
 import UserPhoto from '../components/UserPhoto';
 import BottomMenu from '../components/BottomMenu';
 
 export default function Settings() {
-  const [user, setUser] = useState(null);
-  const [photoUrl, setPhotoUrl] = useState(null);
-
-  useEffect(() => {
-    // Получаем данные пользователя из Telegram WebApp
-    const telegramUser = getTelegramUser();
-    if (telegramUser) {
-      setUser(telegramUser);
-      
-      // Получаем URL фотографии пользователя
-      getUserPhotoUrl(telegramUser.id).then(url => {
-        if (url) setPhotoUrl(url);
-      }).catch(err => {
-        console.error('Ошибка при получении фотографии:', err);
-      });
-    }
-  }, []);
-
   return (
     <div className="container">
       <Head>
@@ -31,7 +12,7 @@ export default function Settings() {
         <meta name="description" content="Настройки MyShadowApp" />
       </Head>
 
-      <UserPhoto user={user} photoUrl={photoUrl} />
+      <UserPhoto />
 
       <main className="main">
         <div className="coming-soon">

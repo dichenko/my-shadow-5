@@ -11,8 +11,29 @@ export const getTelegramUser = () => {
   return null;
 };
 
+// Кеш для хранения URL фотографий пользователей
+const photoCache = new Map();
+
+// Функция для получения URL фотографии пользователя с кешированием
 export const getUserPhotoUrl = async (userId) => {
   if (!userId) return null;
+  
+  // Проверяем, есть ли фото в памяти
+  if (photoCache.has(userId)) {
+    console.log('Получена фотография из кеша памяти');
+    return photoCache.get(userId);
+  }
+  
+  // Проверяем, есть ли фото в localStorage
+  if (typeof window !== 'undefined') {
+    const cachedPhoto = localStorage.getItem(`userPhoto_${userId}`);
+    if (cachedPhoto) {
+      console.log('Получена фотография из localStorage');
+      // Сохраняем в памяти для быстрого доступа
+      photoCache.set(userId, cachedPhoto);
+      return cachedPhoto;
+    }
+  }
   
   try {
     // Сначала пробуем получить фотографию через наш API-эндпоинт
@@ -20,17 +41,47 @@ export const getUserPhotoUrl = async (userId) => {
     
     if (response.ok) {
       const data = await response.json();
-      return data.photoUrl;
+      const photoUrl = data.photoUrl;
+      
+      // Сохраняем в кеш
+      photoCache.set(userId, photoUrl);
+      
+      // Сохраняем в localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`userPhoto_${userId}`, photoUrl);
+      }
+      
+      return photoUrl;
     } 
     
     // Если не удалось получить через API, используем прямой URL к Telegram Avatar
     console.log('Используем прямой URL к Telegram Avatar');
-    return `https://avatars.telegram.org/${userId}`;
+    const fallbackUrl = `https://avatars.telegram.org/${userId}`;
+    
+    // Сохраняем в кеш
+    photoCache.set(userId, fallbackUrl);
+    
+    // Сохраняем в localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`userPhoto_${userId}`, fallbackUrl);
+    }
+    
+    return fallbackUrl;
   } catch (error) {
     console.error('Ошибка при получении фотографии пользователя:', error);
     
     // В случае ошибки тоже используем прямой URL
-    return `https://avatars.telegram.org/${userId}`;
+    const fallbackUrl = `https://avatars.telegram.org/${userId}`;
+    
+    // Сохраняем в кеш
+    photoCache.set(userId, fallbackUrl);
+    
+    // Сохраняем в localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`userPhoto_${userId}`, fallbackUrl);
+    }
+    
+    return fallbackUrl;
   }
 };
 

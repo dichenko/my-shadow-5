@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
+import { useUser } from '../utils/context';
 
-export default function UserPhoto({ user, photoUrl }) {
+export default function UserPhoto() {
+  const { user, photoUrl } = useUser();
   const [error, setError] = useState(false);
 
   // Функция для генерации аватара на основе имени пользователя

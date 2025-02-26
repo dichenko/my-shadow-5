@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { getTelegramUser, getUserPhotoUrl } from '../../utils/telegram';
 import UserPhoto from '../../components/UserPhoto';
 import BottomMenu from '../../components/BottomMenu';
 
@@ -10,27 +9,10 @@ export default function BlockQuestions() {
   const router = useRouter();
   const { id } = router.query;
   
-  const [user, setUser] = useState(null);
-  const [photoUrl, setPhotoUrl] = useState(null);
   const [block, setBlock] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    // Получаем данные пользователя из Telegram WebApp
-    const telegramUser = getTelegramUser();
-    if (telegramUser) {
-      setUser(telegramUser);
-      
-      // Получаем URL фотографии пользователя
-      getUserPhotoUrl(telegramUser.id).then(url => {
-        if (url) setPhotoUrl(url);
-      }).catch(err => {
-        console.error('Ошибка при получении фотографии:', err);
-      });
-    }
-  }, []);
 
   useEffect(() => {
     async function fetchBlockData() {
@@ -73,7 +55,7 @@ export default function BlockQuestions() {
         <meta name="description" content="Вопросы блока в MyShadowApp" />
       </Head>
 
-      <UserPhoto user={user} photoUrl={photoUrl} />
+      <UserPhoto />
 
       <div className="back-button">
         <Link href="/questions">
