@@ -1,143 +1,123 @@
 import prisma from '../../lib/prisma';
 
 export default async function handler(req, res) {
-  switch (req.method) {
-    case 'GET':
-      return getQuestions(req, res);
-    case 'POST':
-      return createQuestion(req, res);
-    case 'DELETE':
-      return deleteQuestion(req, res);
-    default:
-      return res.status(405).json({ message: 'Method not allowed' });
-  }
-}
+  const { method } = req;
 
-// Получение списка вопросов
-async function getQuestions(req, res) {
   try {
-    const { blockId, practiceId, role } = req.query;
-    
-    // Формируем условия фильтрации
-    const where = {};
-    
-    if (blockId) {
-      where.blockId = parseInt(blockId);
+    switch (method) {
+      case 'GET':
+        // Получение вопросов
+        if (req.query.id) {
+          // Получение конкретного вопроса по ID
+          const question = await prisma.question.findUnique({
+            where: {
+              id: parseInt(req.query.id)
+            }
+          });
+          
+          if (!question) {
+            return res.status(404).json({ success: false, message: 'Вопрос не найден' });
+          }
+          
+          return res.status(200).json(question);
+        } else if (req.query.blockId) {
+          // Получение всех вопросов для конкретного блока
+          const questions = await prisma.question.findMany({
+            where: { 
+              blockId: parseInt(req.query.blockId) 
+            },
+            orderBy: {
+              createdAt: 'desc'
+            }
+          });
+          
+          return res.status(200).json(questions);
+        } else {
+          // Получение всех вопросов
+          const questions = await prisma.question.findMany({
+            orderBy: {
+              createdAt: 'desc'
+            }
+          });
+          
+          return res.status(200).json(questions);
+        }
+        
+      case 'POST':
+        // Создание нового вопроса
+        if (!req.body.text || !req.body.role || !req.body.blockId) {
+          return res.status(400).json({ success: false, message: 'Отсутствуют обязательные поля' });
+        }
+        
+        const newQuestion = await prisma.question.create({
+          data: {
+            text: req.body.text,
+            role: req.body.role,
+            blockId: parseInt(req.body.blockId),
+            practiceId: parseInt(req.body.practiceId)
+          }
+        });
+        
+        return res.status(201).json({
+          success: true,
+          ...newQuestion
+        });
+        
+      case 'PUT':
+        // Обновление существующего вопроса
+        if (!req.body.id) {
+          return res.status(400).json({ success: false, message: 'ID вопроса не указан' });
+        }
+        
+        const updateData = {};
+        if (req.body.text) updateData.text = req.body.text;
+        if (req.body.role) updateData.role = req.body.role;
+        if (req.body.blockId) updateData.blockId = parseInt(req.body.blockId);
+        if (req.body.practiceId) updateData.practiceId = parseInt(req.body.practiceId);
+        
+        try {
+          const updatedQuestion = await prisma.question.update({
+            where: {
+              id: parseInt(req.body.id)
+            },
+            data: updateData
+          });
+          
+          return res.status(200).json({ success: true, message: 'Вопрос обновлен', question: updatedQuestion });
+        } catch (error) {
+          if (error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: 'Вопрос не найден' });
+          }
+          throw error;
+        }
+        
+      case 'DELETE':
+        // Удаление вопроса
+        if (!req.query.id) {
+          return res.status(400).json({ success: false, message: 'ID вопроса не указан' });
+        }
+        
+        try {
+          await prisma.question.delete({
+            where: {
+              id: parseInt(req.query.id)
+            }
+          });
+          
+          return res.status(200).json({ success: true, message: 'Вопрос удален' });
+        } catch (error) {
+          if (error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: 'Вопрос не найден' });
+          }
+          throw error;
+        }
+        
+      default:
+        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        return res.status(405).json({ success: false, message: `Метод ${method} не разрешен` });
     }
-    
-    if (practiceId) {
-      where.practiceId = parseInt(practiceId);
-    }
-    
-    if (role) {
-      where.role = role;
-    }
-    
-    const questions = await prisma.question.findMany({
-      where,
-      include: {
-        block: true,
-        practice: true,
-      },
-      orderBy: {
-        id: 'asc',
-      },
-    });
-    
-    return res.status(200).json(questions);
   } catch (error) {
-    console.error('Ошибка при получении списка вопросов:', error);
-    return res.status(500).json({ error: 'Failed to fetch questions', details: error.message });
-  }
-}
-
-// Создание нового вопроса
-async function createQuestion(req, res) {
-  try {
-    const { text, blockId, practiceId, role = 'none' } = req.body;
-    
-    if (!text) {
-      return res.status(400).json({ error: 'Text is required' });
-    }
-    
-    if (!blockId) {
-      return res.status(400).json({ error: 'Block ID is required' });
-    }
-    
-    if (!practiceId) {
-      return res.status(400).json({ error: 'Practice ID is required' });
-    }
-    
-    // Проверяем существование блока и практики
-    const block = await prisma.block.findUnique({
-      where: { id: blockId },
-    });
-    
-    if (!block) {
-      return res.status(404).json({ error: 'Block not found' });
-    }
-    
-    const practice = await prisma.practice.findUnique({
-      where: { id: practiceId },
-    });
-    
-    if (!practice) {
-      return res.status(404).json({ error: 'Practice not found' });
-    }
-    
-    const question = await prisma.question.create({
-      data: {
-        text,
-        blockId,
-        practiceId,
-        role,
-      },
-    });
-    
-    return res.status(201).json(question);
-  } catch (error) {
-    console.error('Ошибка при создании вопроса:', error);
-    return res.status(500).json({ error: 'Failed to create question', details: error.message });
-  }
-}
-
-// Удаление вопроса
-async function deleteQuestion(req, res) {
-  try {
-    const { id } = req.query;
-    
-    if (!id) {
-      return res.status(400).json({ error: 'Question ID is required' });
-    }
-    
-    const questionId = parseInt(id);
-    
-    // Проверяем, есть ли ответы, связанные с этим вопросом
-    const answersCount = await prisma.answer.count({
-      where: { questionId },
-    });
-    
-    if (answersCount > 0) {
-      // Удаляем связанные ответы
-      await prisma.answer.deleteMany({
-        where: { questionId },
-      });
-    }
-    
-    // Удаляем вопрос
-    await prisma.question.delete({
-      where: { id: questionId },
-    });
-    
-    return res.status(200).json({ success: true, message: 'Вопрос успешно удален' });
-  } catch (error) {
-    console.error('Ошибка при удалении вопроса:', error);
-    
-    // Обработка ошибки, если вопрос не найден
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Question not found' });
-    }
-    
-    return res.status(500).json({ error: 'Failed to delete question', details: error.message });
+    console.error('Ошибка API вопросов:', error);
+    return res.status(500).json({ success: false, message: 'Ошибка сервера', error: error.message });
   }
 } 

@@ -281,7 +281,7 @@ export default function Admin() {
                     onClick={() => handleDeletePractice(practice.id)}
                     className="delete-button"
                   >
-                    Удалить
+                    X
                   </button>
                 </li>
               ))}
@@ -310,7 +310,7 @@ export default function Admin() {
                     onClick={() => handleDeleteBlock(block.id)}
                     className="delete-button"
                   >
-                    Удалить
+                    X
                   </button>
                 </li>
               ))}
@@ -376,7 +376,7 @@ export default function Admin() {
                     onClick={() => handleDeleteQuestion(question.id)}
                     className="delete-button"
                   >
-                    Удалить
+                    X
                   </button>
                 </li>
               ))}
