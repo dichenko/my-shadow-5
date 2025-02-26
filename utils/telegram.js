@@ -11,6 +11,27 @@ export const getTelegramUser = () => {
   return null;
 };
 
+export const getUserPhotoUrl = async (userId) => {
+  if (!userId) return null;
+  
+  try {
+    // Пытаемся получить фотографию пользователя через наш API-эндпоинт
+    const response = await fetch(`/api/user-photo?userId=${userId}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.photoUrl;
+    } else {
+      console.log('Не удалось получить фотографию пользователя через API');
+      // Если не удалось получить фотографию через API, используем аватар по умолчанию
+      return null;
+    }
+  } catch (error) {
+    console.error('Ошибка при получении фотографии пользователя:', error);
+    return null;
+  }
+};
+
 export const initTelegramApp = () => {
   if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
     const webApp = window.Telegram.WebApp;
