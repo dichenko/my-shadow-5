@@ -250,9 +250,9 @@ export default function Admin() {
                 value={newQuestion.role}
                 onChange={(e) => setNewQuestion({ ...newQuestion, role: e.target.value })}
               >
-                <option value="none">Без роли</option>
-                <option value="intro">Вступление</option>
-                <option value="conclusion">Заключение</option>
+                <option value="none">none</option>
+                <option value="taker">taker</option>
+                <option value="giver">giver</option>
               </select>
               <button type="submit">Добавить</button>
             </form>
