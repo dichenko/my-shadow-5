@@ -3,21 +3,40 @@
 export const getTelegramUser = () => {
   if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
     const webApp = window.Telegram.WebApp;
-    return webApp.initDataUnsafe?.user || null;
+    const user = webApp.initDataUnsafe?.user || null;
+    console.log('Получены данные пользователя из Telegram WebApp:', user);
+    return user;
   }
+  console.log('Telegram WebApp не обнаружен или пользователь не авторизован');
   return null;
 };
 
 export const initTelegramApp = () => {
   if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
     const webApp = window.Telegram.WebApp;
+    console.log('Инициализация Telegram WebApp...');
     webApp.ready();
     webApp.expand();
+    console.log('Telegram WebApp успешно инициализирован');
+    
+    // Выводим информацию о WebApp
+    console.log('Версия WebApp:', webApp.version);
+    console.log('Платформа:', webApp.platform);
+    console.log('Цветовая схема:', webApp.colorScheme);
+  } else {
+    console.log('Telegram WebApp не обнаружен');
   }
 };
 
 export const saveUserData = async (userData) => {
   try {
+    console.log('Отправка данных пользователя на сервер:', userData);
+    
+    if (!userData || !userData.id) {
+      console.error('Ошибка: отсутствует ID пользователя в данных');
+      return null;
+    }
+    
     const response = await fetch('/api/user', {
       method: 'POST',
       headers: {
@@ -25,9 +44,18 @@ export const saveUserData = async (userData) => {
       },
       body: JSON.stringify(userData),
     });
-    return await response.json();
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Ошибка при сохранении данных пользователя:', errorData);
+      return null;
+    }
+    
+    const result = await response.json();
+    console.log('Данные пользователя успешно сохранены:', result);
+    return result;
   } catch (error) {
-    console.error('Error saving user data:', error);
+    console.error('Ошибка при отправке данных пользователя:', error);
     return null;
   }
 }; 

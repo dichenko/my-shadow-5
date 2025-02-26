@@ -4,17 +4,45 @@ import { getTelegramUser, saveUserData, initTelegramApp } from '../utils/telegra
 
 export default function Home() {
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Инициализируем Telegram WebApp
-    initTelegramApp();
-    
-    // Получаем данные пользователя из Telegram WebApp
-    const telegramUser = getTelegramUser();
-    if (telegramUser) {
-      setUser(telegramUser);
-      saveUserData(telegramUser);
+    async function initApp() {
+      try {
+        console.log('Инициализация приложения...');
+        
+        // Инициализируем Telegram WebApp
+        initTelegramApp();
+        
+        // Получаем данные пользователя из Telegram WebApp
+        const telegramUser = getTelegramUser();
+        
+        if (telegramUser) {
+          console.log('Пользователь получен:', telegramUser);
+          setUser(telegramUser);
+          
+          // Сохраняем данные пользователя
+          try {
+            const savedUser = await saveUserData(telegramUser);
+            console.log('Данные пользователя сохранены:', savedUser);
+          } catch (saveError) {
+            console.error('Ошибка при сохранении данных пользователя:', saveError);
+            setError('Не удалось сохранить данные пользователя');
+          }
+        } else {
+          console.log('Пользователь не получен из Telegram WebApp');
+          setError('Не удалось получить данные пользователя из Telegram');
+        }
+      } catch (e) {
+        console.error('Ошибка при инициализации приложения:', e);
+        setError('Произошла ошибка при инициализации приложения');
+      } finally {
+        setLoading(false);
+      }
     }
+    
+    initApp();
   }, []);
 
   return (
@@ -26,9 +54,15 @@ export default function Home() {
       </Head>
 
       <main className="main">
-        <h1 className="title">
-          Привет, {user ? user.first_name : 'гость'}!
-        </h1>
+        {loading ? (
+          <p className="loading">Загрузка...</p>
+        ) : error ? (
+          <p className="error">{error}</p>
+        ) : (
+          <h1 className="title">
+            Привет, {user ? user.first_name : 'гость'}!
+          </h1>
+        )}
       </main>
 
       <style jsx>{`
@@ -55,6 +89,16 @@ export default function Home() {
           line-height: 1.15;
           font-size: 4rem;
           text-align: center;
+        }
+        .loading {
+          font-size: 1.5rem;
+          color: var(--tg-theme-hint-color, #999999);
+        }
+        .error {
+          font-size: 1.5rem;
+          color: var(--tg-theme-destructive-text-color, #ff0000);
+          text-align: center;
+          max-width: 80%;
         }
       `}</style>
     </div>

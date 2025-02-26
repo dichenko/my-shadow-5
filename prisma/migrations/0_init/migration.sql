@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "TelegramUser" (
+CREATE TABLE IF NOT EXISTS "TelegramUser" (
     "id" SERIAL NOT NULL,
     "tgId" INTEGER NOT NULL,
     "firstName" TEXT,
@@ -14,4 +14,4 @@ CREATE TABLE "TelegramUser" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "TelegramUser_tgId_key" ON "TelegramUser"("tgId"); 
+CREATE UNIQUE INDEX IF NOT EXISTS "TelegramUser_tgId_key" ON "TelegramUser"("tgId"); 
