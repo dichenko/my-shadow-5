@@ -18,4 +18,47 @@ model TelegramUser {
   firstVisit    DateTime @default(now())
   lastVisit     DateTime @default(now())
   visitCount    Int      @default(1)
+  answers       Answer[]
+}
+
+model Practice {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  questions  Question[]
+}
+
+model Block {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  questions  Question[]
+}
+
+model Question {
+  id         Int       @id @default(autoincrement())
+  text       String
+  blockId    Int
+  practiceId Int
+  role       String    @default("none")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  
+  block      Block     @relation(fields: [blockId], references: [id])
+  practice   Practice  @relation(fields: [practiceId], references: [id])
+  answers    Answer[]
+}
+
+model Answer {
+  id         Int       @id @default(autoincrement())
+  questionId Int
+  userId     Int
+  text       String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  
+  question   Question  @relation(fields: [questionId], references: [id])
+  user       TelegramUser @relation(fields: [userId], references: [id])
 } 

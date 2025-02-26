@@ -15,20 +15,22 @@ export const getUserPhotoUrl = async (userId) => {
   if (!userId) return null;
   
   try {
-    // Пытаемся получить фотографию пользователя через наш API-эндпоинт
+    // Сначала пробуем получить фотографию через наш API-эндпоинт
     const response = await fetch(`/api/user-photo?userId=${userId}`);
     
     if (response.ok) {
       const data = await response.json();
       return data.photoUrl;
-    } else {
-      console.log('Не удалось получить фотографию пользователя через API');
-      // Если не удалось получить фотографию через API, используем аватар по умолчанию
-      return null;
-    }
+    } 
+    
+    // Если не удалось получить через API, используем прямой URL к Telegram Avatar
+    console.log('Используем прямой URL к Telegram Avatar');
+    return `https://avatars.telegram.org/${userId}`;
   } catch (error) {
     console.error('Ошибка при получении фотографии пользователя:', error);
-    return null;
+    
+    // В случае ошибки тоже используем прямой URL
+    return `https://avatars.telegram.org/${userId}`;
   }
 };
 
