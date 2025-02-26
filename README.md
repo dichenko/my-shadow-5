@@ -9,27 +9,23 @@
    npm install
    ```
 
-2. Создайте файл `.env` на основе `.env.example` и заполните его своими данными подключения к Neon:
+2. Для локальной разработки создайте файл `.env` и укажите URL вашей базы данных Neon:
    ```
-   cp .env.example .env
-   ```
-
-3. Отредактируйте файл `.env` и укажите URL вашей базы данных Neon:
-   ```
-   DATABASE_URL=postgres://username:password@hostname:5432/database
+   POSTGRES_PRISMA_URL=postgres://username:password@hostname:5432/database
+   POSTGRES_URL_NON_POOLING=postgres://username:password@hostname:5432/database
    ```
 
-4. Сгенерируйте клиент Prisma:
+3. Сгенерируйте клиент Prisma:
    ```
    npx prisma generate
    ```
 
-5. Создайте миграцию базы данных:
+4. Создайте миграцию базы данных (только для локальной разработки):
    ```
    npx prisma migrate dev --name init
    ```
 
-6. Запустите приложение:
+5. Запустите приложение:
    ```
    npm run dev
    ```
@@ -38,13 +34,18 @@
 
 1. Создайте проект на Vercel и подключите его к вашему репозиторию.
 
-2. Добавьте переменную окружения `DATABASE_URL` в настройках проекта на Vercel.
+2. Подключите базу данных Neon через интеграцию Vercel. Vercel автоматически создаст необходимые переменные окружения:
+   - `POSTGRES_PRISMA_URL`
+   - `POSTGRES_URL_NON_POOLING`
 
-3. Деплой автоматически запустит миграцию базы данных благодаря скрипту `postinstall` в `package.json`.
+3. При первом деплое Prisma автоматически применит миграции и создаст таблицы в базе данных.
+
+4. При последующих деплоях Prisma будет применять только новые миграции, сохраняя существующие данные.
 
 ## Структура проекта
 
 - `prisma/schema.prisma` - Схема базы данных Prisma
+- `prisma/migrations` - Миграции базы данных
 - `lib/prisma.js` - Клиент Prisma для работы с базой данных
 - `pages/api/user.js` - API-эндпоинт для сохранения данных пользователя
 - `pages/index.js` - Главная страница приложения
