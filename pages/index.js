@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { getTelegramUser, saveUserData } from '../utils/telegram';
+import { getTelegramUser, saveUserData, initTelegramApp } from '../utils/telegram';
 
 export default function Home() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Инициализируем Telegram WebApp
+    initTelegramApp();
+    
     // Получаем данные пользователя из Telegram WebApp
     const telegramUser = getTelegramUser();
     if (telegramUser) {
