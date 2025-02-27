@@ -31,15 +31,22 @@ export function UserProvider({ children }) {
             });
             
             if (!response.ok) {
-              const errorData = await response.json();
+              const errorData = await response.json().catch(() => ({}));
               console.error('Не удалось сохранить данные пользователя. Статус:', response.status, 'Ошибка:', errorData);
             } else {
-              const userData = await response.json();
+              const userData = await response.json().catch(() => ({}));
               console.log('Данные пользователя успешно сохранены на сервере:', userData);
-              setServerUser(userData);
               
-              // Сохраняем ID пользователя в localStorage для использования в случае проблем с cookie
-              localStorage.setItem('userId', userData.id.toString());
+              if (userData && userData.id) {
+                setServerUser(userData);
+                
+                // Сохраняем ID пользователя в localStorage для использования в случае проблем с cookie
+                try {
+                  localStorage.setItem('userId', userData.id.toString());
+                } catch (storageError) {
+                  console.error('Ошибка при сохранении ID в localStorage:', storageError);
+                }
+              }
             }
           } catch (saveError) {
             console.error('Ошибка при сохранении данных пользователя:', saveError);
@@ -52,6 +59,20 @@ export function UserProvider({ children }) {
           });
         } else {
           console.error('Не удалось получить данные пользователя из Telegram WebApp');
+          
+          // Пытаемся восстановить ID пользователя из localStorage
+          try {
+            const storedUserId = localStorage.getItem('userId');
+            if (storedUserId) {
+              console.log('Восстановлен ID пользователя из localStorage:', storedUserId);
+              setUser({
+                id: parseInt(storedUserId, 10),
+                _source: 'localStorage'
+              });
+            }
+          } catch (storageError) {
+            console.error('Ошибка при чтении из localStorage:', storageError);
+          }
         }
       } catch (error) {
         console.error('Ошибка при загрузке данных пользователя:', error);

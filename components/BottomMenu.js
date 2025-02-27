@@ -39,10 +39,12 @@ export default function BottomMenu({ activePage = 'questions' }) {
         setAnimating(false);
       }, 500); // Длительность анимации
     }
-  }, [router.pathname]);
+  }, [router.pathname, active]);
 
   // Функция для предзагрузки данных при наведении на пункт меню
   const prefetchData = (page) => {
+    if (!queryClient) return;
+    
     if (page === 'questions' && user) {
       // Предзагружаем блоки с вопросами
       queryClient.prefetchQuery({
@@ -78,7 +80,7 @@ export default function BottomMenu({ activePage = 'questions' }) {
         <span>Моя пара</span>
       </Link>
       
-      <Link href="/settings" className={`menu-item ${active === 'settings' ? 'active' : ''} ${prevActive === 'settings' && animating ? 'prev-active' : ''}`} onMouseEnter={() => prefetchData('settings')}>
+      <Link href="/settings" className={`menu-item ${active === 'settings' ? 'active' : ''} ${prevActive === 'settings' && animating ? 'prev-active' : ''}`}>
         <div className="icon-container">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
