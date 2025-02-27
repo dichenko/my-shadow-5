@@ -7,6 +7,7 @@ const UserContext = createContext();
 // Провайдер контекста пользователя
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [serverUser, setServerUser] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -16,9 +17,12 @@ export function UserProvider({ children }) {
         // Получаем данные пользователя из Telegram WebApp
         const telegramUser = getTelegramUser();
         
-        if (telegramUser) {
+        console.log('Данные пользователя из Telegram WebApp:', telegramUser);
+        
+        if (telegramUser && telegramUser.id) {
           // Сохраняем данные пользователя на сервере
           try {
+            console.log('Отправляем данные пользователя на сервер:', telegramUser);
             const response = await fetch('/api/user', {
               method: 'POST',
               headers: {
@@ -28,21 +32,33 @@ export function UserProvider({ children }) {
             });
             
             if (!response.ok) {
-              console.error('Не удалось сохранить данные пользователя:', await response.json());
+              const errorData = await response.json();
+              console.error('Не удалось сохранить данные пользователя. Статус:', response.status, 'Ошибка:', errorData);
             } else {
-              console.log('Данные пользователя успешно сохранены на сервере');
+              const userData = await response.json();
+              console.log('Данные пользователя успешно сохранены на сервере:', userData);
+              setServerUser(userData);
+              
+              // Сохраняем ID пользователя в localStorage для использования в случае проблем с cookie
+              localStorage.setItem('userId', userData.id.toString());
             }
           } catch (saveError) {
             console.error('Ошибка при сохранении данных пользователя:', saveError);
           }
           
-          setUser(telegramUser);
+          setUser({
+            ...telegramUser,
+            // Добавляем дополнительную информацию для отладки
+            _source: 'telegram'
+          });
           
           // Получаем URL фотографии пользователя
           const userPhotoUrl = await getUserPhotoUrl(telegramUser.id);
           if (userPhotoUrl) {
             setPhotoUrl(userPhotoUrl);
           }
+        } else {
+          console.error('Не удалось получить данные пользователя из Telegram WebApp');
         }
       } catch (error) {
         console.error('Ошибка при загрузке данных пользователя:', error);
@@ -54,8 +70,15 @@ export function UserProvider({ children }) {
     loadUserData();
   }, []);
 
+  // Объединенный пользовательский объект с данными как от Telegram, так и от сервера
+  const combinedUser = user && serverUser ? { 
+    ...user, 
+    dbId: serverUser.id, // ID пользователя в базе данных
+    _serverData: serverUser // Полные данные с сервера (для отладки)
+  } : user;
+
   return (
-    <UserContext.Provider value={{ user, photoUrl, loading }}>
+    <UserContext.Provider value={{ user: combinedUser, photoUrl, loading, serverUser }}>
       {children}
     </UserContext.Provider>
   );

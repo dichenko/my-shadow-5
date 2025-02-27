@@ -59,9 +59,13 @@ export default function BlockQuestions() {
       setSubmitting(true);
       setError(null);
       
+      // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
+      const userId = user.dbId || user.id;
+      
       console.log('Отправка ответа:', {
         questionId: currentQuestion.id,
-        userId: user.id,
+        userId: userId,
+        userType: user.dbId ? 'dbId' : 'telegramId',
         text: answer
       });
       
@@ -72,12 +76,18 @@ export default function BlockQuestions() {
         },
         body: JSON.stringify({
           questionId: currentQuestion.id,
-          userId: user.id,
+          userId: userId,
           text: answer, // "yes", "no", "maybe"
         }),
       });
       
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Ошибка при парсинге ответа:', parseError);
+        throw new Error('Ошибка при получении ответа от сервера');
+      }
       
       if (!response.ok) {
         console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);

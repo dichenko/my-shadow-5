@@ -2,12 +2,60 @@
 
 export const getTelegramUser = () => {
   if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
-    const webApp = window.Telegram.WebApp;
-    const user = webApp.initDataUnsafe?.user || null;
-    console.log('Получены данные пользователя из Telegram WebApp:', user);
-    return user;
+    try {
+      const webApp = window.Telegram.WebApp;
+      const user = webApp.initDataUnsafe?.user || null;
+      
+      if (user) {
+        console.log('Получены данные пользователя из Telegram WebApp:', user);
+        
+        // Проверяем наличие необходимых полей
+        if (!user.id) {
+          console.error('ID пользователя отсутствует в данных Telegram WebApp');
+        }
+        
+        // Сохраняем данные в localStorage на случай, если понадобятся при перезагрузке
+        try {
+          localStorage.setItem('telegramUser', JSON.stringify(user));
+        } catch (storageError) {
+          console.error('Не удалось сохранить данные пользователя в localStorage:', storageError);
+        }
+        
+        return user;
+      } else {
+        console.warn('Пользователь не найден в данных Telegram WebApp');
+        
+        // Пытаемся восстановить из localStorage, если данные там есть
+        try {
+          const savedUser = localStorage.getItem('telegramUser');
+          if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
+            console.log('Восстановлены данные пользователя из localStorage:', parsedUser);
+            return parsedUser;
+          }
+        } catch (parseError) {
+          console.error('Ошибка при восстановлении данных пользователя из localStorage:', parseError);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка при получении данных пользователя из Telegram WebApp:', error);
+    }
+  } else {
+    console.log('Telegram WebApp не обнаружен или пользователь не авторизован');
+    
+    // Пытаемся восстановить из localStorage в любом случае
+    try {
+      const savedUser = localStorage.getItem('telegramUser');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        console.log('Восстановлены данные пользователя из localStorage (WebApp не обнаружен):', parsedUser);
+        return parsedUser;
+      }
+    } catch (parseError) {
+      console.error('Ошибка при восстановлении данных пользователя из localStorage:', parseError);
+    }
   }
-  console.log('Telegram WebApp не обнаружен или пользователь не авторизован');
+  
   return null;
 };
 

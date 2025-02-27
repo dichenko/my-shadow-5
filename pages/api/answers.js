@@ -37,25 +37,60 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: 'Вопрос не найден' });
         }
 
-        // Проверяем, существует ли пользователь
-        const user = await prisma.telegramUser.findUnique({
+        // Пытаемся найти пользователя двумя способами:
+        // 1. Сначала по id в базе данных
+        // 2. Если не найден, то пытаемся найти по tgId (userId может быть идентификатором Telegram)
+        let user = await prisma.telegramUser.findUnique({
           where: { id: parseInt(userId) }
         });
 
+        // Если пользователь не найден по id, пытаемся найти по tgId
         if (!user) {
-          console.error('Пользователь не найден:', userId);
-          // Вместо попытки создать пользователя, который уже должен быть создан при авторизации,
-          // вернем ошибку с более информативным сообщением
-          return res.status(404).json({ 
-            error: 'Пользователь не найден. Пожалуйста, перезагрузите приложение или попробуйте войти заново.' 
+          console.log('Пользователь не найден по id, пытаемся найти по tgId:', userId);
+          user = await prisma.telegramUser.findUnique({
+            where: { tgId: parseInt(userId) }
           });
+        }
+
+        // Если пользователь все еще не найден, пытаемся использовать userId из localStorage
+        if (!user && typeof window !== 'undefined') {
+          const localStorageUserId = localStorage.getItem('userId');
+          if (localStorageUserId) {
+            console.log('Пытаемся найти пользователя по userId из localStorage:', localStorageUserId);
+            user = await prisma.telegramUser.findUnique({
+              where: { id: parseInt(localStorageUserId) }
+            });
+          }
+        }
+
+        if (!user) {
+          console.error('Пользователь не найден ни по id, ни по tgId:', userId);
+          
+          // Если пользователь не найден, попытаемся создать его на основе Telegram ID
+          try {
+            console.log('Попытка создать пользователя с tgId:', userId);
+            user = await prisma.telegramUser.create({
+              data: {
+                tgId: parseInt(userId),
+                firstVisit: new Date(),
+                lastVisit: new Date(),
+                visitCount: 1
+              }
+            });
+            console.log('Создан новый пользователь:', user);
+          } catch (createError) {
+            console.error('Ошибка при создании пользователя:', createError);
+            return res.status(404).json({ 
+              error: 'Пользователь не найден. Пожалуйста, перезагрузите приложение или попробуйте войти заново.' 
+            });
+          }
         }
 
         // Проверяем, существует ли уже ответ на этот вопрос от этого пользователя
         const existingAnswer = await prisma.answer.findFirst({
           where: {
             questionId: parseInt(questionId),
-            userId: parseInt(userId)
+            userId: user.id  // Используем найденный id из базы данных
           }
         });
 
@@ -73,7 +108,7 @@ export default async function handler(req, res) {
           answer = await prisma.answer.create({
             data: {
               questionId: parseInt(questionId),
-              userId: parseInt(userId),
+              userId: user.id,  // Используем найденный id из базы данных
               text
             }
           });
@@ -83,11 +118,11 @@ export default async function handler(req, res) {
         return res.status(200).json(answer);
       } catch (dbError) {
         console.error('Ошибка при работе с базой данных:', dbError);
-        return res.status(500).json({ error: 'Ошибка при работе с базой данных' });
+        return res.status(500).json({ error: 'Ошибка при работе с базой данных', details: dbError.message });
       }
     } catch (error) {
       console.error('Общая ошибка при создании/обновлении ответа:', error);
-      return res.status(500).json({ error: 'Не удалось создать/обновить ответ' });
+      return res.status(500).json({ error: 'Не удалось создать/обновить ответ', details: error.message });
     }
   }
 
