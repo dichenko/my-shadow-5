@@ -19,33 +19,35 @@ export default function BlocksList({ blocks = [] }) {
       ) : (
         <div className="blocks-list">
           {blocks.map((block, index) => (
-            <Link href={`/block/${block.id}`} key={block.id} className="block-card" style={{
-              background: gradients[index % gradients.length]
-            }}>
-              <div className="block-content">
-                <div className="block-info">
-                  <h3 className="block-name">{block.name}</h3>
-                  <span className="block-questions-count">
-                    {block.questionsCount || 0} вопросов
-                    {block.answeredCount !== undefined && (
-                      <span className="block-progress"> • Отвечено: {block.answeredCount}/{block.questionsCount}</span>
+            <Link href={`/block/${block.id}`} key={block.id}>
+              <div className="block-card" style={{
+                background: gradients[index % gradients.length]
+              }}>
+                <div className="block-content">
+                  <div className="block-info">
+                    <h3 className="block-name">{block.name}</h3>
+                    <span className="block-questions-count">
+                      {block.questionsCount || 0} вопросов
+                      {block.answeredCount !== undefined && (
+                        <span className="block-progress"> • Отвечено: {block.answeredCount}/{block.questionsCount}</span>
+                      )}
+                    </span>
+                    {block.answeredCount !== undefined && block.questionsCount > 0 && (
+                      <div className="progress-bar-container">
+                        <div 
+                          className="progress-bar" 
+                          style={{ 
+                            width: `${(block.answeredCount / block.questionsCount) * 100}%` 
+                          }}
+                        ></div>
+                      </div>
                     )}
-                  </span>
-                  {block.answeredCount !== undefined && block.questionsCount > 0 && (
-                    <div className="progress-bar-container">
-                      <div 
-                        className="progress-bar" 
-                        style={{ 
-                          width: `${(block.answeredCount / block.questionsCount) * 100}%` 
-                        }}
-                      ></div>
-                    </div>
-                  )}
-                </div>
-                <div className="block-arrow">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  </div>
+                  <div className="block-arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </Link>
