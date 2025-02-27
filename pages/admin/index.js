@@ -45,7 +45,7 @@ export default function Admin() {
         
         // Проверяем ответы для аутентификации
         if (practicesRes.status === 401 || blocksRes.status === 401 || questionsRes.status === 401) {
-          router.push('/admin/login');
+          router.replace('/admin/login');
           return;
         }
         
@@ -77,7 +77,7 @@ export default function Admin() {
   const handleLogout = async () => {
     try {
       await fetch('/api/admin/logout', { method: 'POST' });
-      router.push('/admin/login');
+      router.replace('/admin/login');
     } catch (error) {
       console.error('Ошибка при выходе:', error);
     }

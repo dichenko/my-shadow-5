@@ -9,10 +9,16 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false); // Флаг для отслеживания выполненной проверки
   const router = useRouter();
 
   // Проверяем, авторизован ли пользователь
   useEffect(() => {
+    // Предотвращаем повторные проверки авторизации
+    if (authChecked) {
+      return;
+    }
+
     async function checkAuth() {
       try {
         console.log('Проверка авторизации администратора...');
@@ -42,7 +48,8 @@ export default function Login() {
         
         if (res.ok && data.authenticated) {
           console.log('Администратор авторизован, перенаправление в панель...');
-          router.push('/admin');
+          // Используем replace вместо push, чтобы избежать проблем с историей навигации
+          router.replace('/admin');
         } else {
           console.log('Администратор не авторизован, отображение формы входа');
           setDebugInfo({
@@ -57,11 +64,12 @@ export default function Login() {
         setError('Ошибка при проверке аутентификации: ' + error.message);
       } finally {
         setCheckingAuth(false);
+        setAuthChecked(true); // Отмечаем, что проверка выполнена
       }
     }
     
     checkAuth();
-  }, [router]);
+  }, [router, authChecked]); // Добавляем authChecked в зависимости
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -109,9 +117,9 @@ export default function Login() {
       console.log('Проверка после входа:', checkData);
       
       if (checkResult.ok && checkData.authenticated) {
-        // Перенаправляем на админ-панель
+        // Перенаправляем на админ-панель, используем replace вместо push
         console.log('Вход успешен, перенаправление в админ-панель');
-        router.push('/admin');
+        router.replace('/admin');
       } else {
         console.error('Странно: вход успешен, но проверка не прошла');
         setError('Произошла ошибка при авторизации. Возможно, cookie не сохранились.');
