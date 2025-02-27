@@ -17,6 +17,25 @@ export function UserProvider({ children }) {
         const telegramUser = getTelegramUser();
         
         if (telegramUser) {
+          // Сохраняем данные пользователя на сервере
+          try {
+            const response = await fetch('/api/user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(telegramUser),
+            });
+            
+            if (!response.ok) {
+              console.error('Не удалось сохранить данные пользователя:', await response.json());
+            } else {
+              console.log('Данные пользователя успешно сохранены на сервере');
+            }
+          } catch (saveError) {
+            console.error('Ошибка при сохранении данных пользователя:', saveError);
+          }
+          
           setUser(telegramUser);
           
           // Получаем URL фотографии пользователя

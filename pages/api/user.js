@@ -13,6 +13,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid user data' })
     }
     
+    console.log('Получены данные пользователя:', userData);
+    
     // Проверяем, существует ли пользователь с таким Telegram ID
     const existingUser = await prisma.telegramUser.findUnique({
       where: {
@@ -23,6 +25,7 @@ export default async function handler(req, res) {
     let user;
     
     if (existingUser) {
+      console.log('Найден существующий пользователь:', existingUser);
       // Обновляем существующего пользователя
       user = await prisma.telegramUser.update({
         where: {
@@ -34,6 +37,7 @@ export default async function handler(req, res) {
         }
       })
     } else {
+      console.log('Создаем нового пользователя с tgId:', userData.id);
       // Создаем нового пользователя
       user = await prisma.telegramUser.create({
         data: {
@@ -43,6 +47,7 @@ export default async function handler(req, res) {
           visitCount: 1
         }
       })
+      console.log('Создан новый пользователь:', user);
     }
     
     // Устанавливаем cookie с ID пользователя
@@ -50,11 +55,12 @@ export default async function handler(req, res) {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
       maxAge: 60 * 60 * 24 * 7, // 7 дней
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/'
     })
     
     res.setHeader('Set-Cookie', cookie)
+    console.log('Установлен cookie userId:', user.id);
     
     return res.status(existingUser ? 200 : 201).json(user)
   } catch (error) {

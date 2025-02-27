@@ -44,21 +44,11 @@ export default async function handler(req, res) {
 
         if (!user) {
           console.error('Пользователь не найден:', userId);
-          // Создаем пользователя, если он не существует
-          try {
-            const newUser = await prisma.telegramUser.create({
-              data: {
-                id: parseInt(userId),
-                firstName: 'Unknown',
-                lastVisit: new Date(),
-                visitCount: 1
-              }
-            });
-            console.log('Создан новый пользователь:', newUser);
-          } catch (userCreateError) {
-            console.error('Ошибка при создании пользователя:', userCreateError);
-            return res.status(500).json({ error: 'Не удалось создать пользователя' });
-          }
+          // Вместо попытки создать пользователя, который уже должен быть создан при авторизации,
+          // вернем ошибку с более информативным сообщением
+          return res.status(404).json({ 
+            error: 'Пользователь не найден. Пожалуйста, перезагрузите приложение или попробуйте войти заново.' 
+          });
         }
 
         // Проверяем, существует ли уже ответ на этот вопрос от этого пользователя
