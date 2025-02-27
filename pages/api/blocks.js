@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import { parse } from 'cookie';
-
-const prisma = new PrismaClient();
 
 // Простая проверка аутентификации на основе cookie
 async function checkAuth(req) {
@@ -44,9 +42,10 @@ export default async function handler(req, res) {
       }
       
       const blocks = await prisma.block.findMany({
-        orderBy: {
-          order: 'asc',
-        },
+        orderBy: [
+          { order: 'asc' },
+          { id: 'asc' }
+        ],
       });
       
       return res.status(200).json(blocks);

@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import { parse } from 'cookie';
-
-const prisma = new PrismaClient();
 
 // Простая проверка аутентификации на основе cookie
 async function checkAuth(req) {
@@ -40,7 +38,10 @@ export default async function handler(req, res) {
       // Получаем вопросы для этого блока
       const questions = await prisma.question.findMany({
         where: { blockId: parseInt(id) },
-        orderBy: { order: 'asc' },
+        orderBy: [
+          { order: 'asc' },
+          { id: 'asc' }
+        ],
       });
       
       return res.status(200).json({
@@ -49,28 +50,23 @@ export default async function handler(req, res) {
       });
     }
     
-    // Для получения списка всех блоков с вопросами требуется аутентификация
-    const isAuthenticated = await checkAuth(req);
-    if (!isAuthenticated) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-    
-    // Получаем все блоки
+    // Получаем все блоки (доступно без аутентификации)
     const blocks = await prisma.block.findMany({
-      orderBy: {
-        order: 'asc',
-      },
+      orderBy: [
+        { order: 'asc' },
+        { id: 'asc' }
+      ],
     });
 
     // Для каждого блока считаем количество вопросов
     const blocksWithQuestionCount = await Promise.all(
       blocks.map(async (block) => {
-        const questionCount = await prisma.question.count({
+        const questionsCount = await prisma.question.count({
           where: { blockId: block.id },
         });
         return {
           ...block,
-          questionCount,
+          questionsCount, // Используем questionsCount вместо questionCount для совместимости
         };
       })
     );
