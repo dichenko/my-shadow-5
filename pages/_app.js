@@ -1,12 +1,15 @@
 import '../styles/globals.css';
 import { UserProvider } from '../utils/context';
 import TelegramScript from '../components/TelegramScript';
+import SwipeHandler from '../components/SwipeHandler';
 
 function MyApp({ Component, pageProps }) {
   return (
     <UserProvider>
       <TelegramScript />
-      <Component {...pageProps} />
+      <SwipeHandler>
+        <Component {...pageProps} />
+      </SwipeHandler>
     </UserProvider>
   );
 }

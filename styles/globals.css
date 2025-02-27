@@ -28,6 +28,7 @@ body {
 body {
   background-color: var(--tg-theme-bg-color, #ffffff);
   color: var(--tg-theme-text-color, #000000);
+  touch-action: pan-y; /* Разрешаем только вертикальный скролл, горизонтальные свайпы обрабатываем сами */
 }
 
 a {
@@ -37,6 +38,35 @@ a {
 
 button {
   cursor: pointer;
+}
+
+/* Стили для плавного перехода между страницами */
+.container {
+  transition: opacity 0.2s ease;
+}
+
+/* Анимация для свайпа */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-transition-enter {
+  opacity: 0;
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
 @media (prefers-color-scheme: dark) {
