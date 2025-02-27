@@ -77,9 +77,14 @@ export default function Questions() {
         <title>Вопросы | MyShadowApp</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
         <meta name="description" content="Блоки вопросов MyShadowApp" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
       </Head>
 
       <main className="main">
+        <h1 className="app-title">MyShadow</h1>
+        
         {error ? (
           <div className="error">{error}</div>
         ) : loading ? (
@@ -104,6 +109,20 @@ export default function Questions() {
         
         .main {
           flex: 1;
+          padding-top: 1.5rem;
+        }
+        
+        .app-title {
+          text-align: center;
+          font-size: 2.5rem;
+          font-weight: bold;
+          margin-bottom: 2rem;
+          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-family: 'Montserrat', sans-serif;
+          letter-spacing: 1px;
         }
         
         .error {
