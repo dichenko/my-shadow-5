@@ -64,23 +64,53 @@ export default function BottomMenu({ activePage = 'questions' }) {
           padding: 0.5rem;
           color: var(--tg-theme-hint-color, #999999);
           text-decoration: none;
-          transition: color 0.3s;
+          transition: all 0.3s ease;
           width: 33.33%;
           text-align: center;
+          border-radius: 8px;
+          position: relative;
         }
         
         .menu-item svg {
           margin-bottom: 0.25rem;
           width: 24px;
           height: 24px;
+          transition: all 0.3s ease;
         }
         
         .menu-item span {
           font-size: 0.75rem;
+          transition: all 0.3s ease;
         }
         
         .menu-item.active {
           color: var(--tg-theme-button-color, #2481cc);
+          background-color: rgba(36, 129, 204, 0.1);
+          transform: translateY(-5px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .menu-item.active svg {
+          width: 28px;
+          height: 28px;
+          stroke-width: 2.5;
+        }
+        
+        .menu-item.active span {
+          font-size: 0.85rem;
+          font-weight: bold;
+        }
+        
+        .menu-item.active::after {
+          content: '';
+          position: absolute;
+          bottom: -0.5rem;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 30px;
+          height: 3px;
+          background-color: var(--tg-theme-button-color, #2481cc);
+          border-radius: 3px;
         }
       `}</style>
     </div>
