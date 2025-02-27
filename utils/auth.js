@@ -53,12 +53,6 @@ export async function checkAdminAuth(req) {
     const cookies = parse(req.headers.cookie || '');
     const adminToken = cookies.adminToken;
     
-    // Логируем значения для отладки
-    console.log('checkAdminAuth - Проверка аутентификации администратора:');
-    console.log('Cookie adminToken:', adminToken);
-    console.log('ADMIN_PASSWORD из env:', process.env.ADMIN_PASSWORD);
-    console.log('Совпадение:', adminToken === process.env.ADMIN_PASSWORD);
-    
     // Проверяем токен администратора
     return adminToken === process.env.ADMIN_PASSWORD;
   } catch (error) {
