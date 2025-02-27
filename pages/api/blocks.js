@@ -19,15 +19,30 @@ async function checkAuth(req) {
 }
 
 export default async function handler(req, res) {
-  // Проверка аутентификации
-  const isAuthenticated = await checkAuth(req);
-  if (!isAuthenticated) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
   // Обработка GET запроса
   if (req.method === 'GET') {
     try {
+      const { id } = req.query;
+      
+      // Если указан id, возвращаем конкретный блок (доступно без аутентификации)
+      if (id) {
+        const block = await prisma.block.findUnique({
+          where: { id: parseInt(id) },
+        });
+        
+        if (!block) {
+          return res.status(404).json({ message: 'Block not found' });
+        }
+        
+        return res.status(200).json(block);
+      }
+      
+      // Для получения списка всех блоков требуется аутентификация
+      const isAuthenticated = await checkAuth(req);
+      if (!isAuthenticated) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
       const blocks = await prisma.block.findMany({
         orderBy: {
           order: 'asc',
@@ -39,6 +54,12 @@ export default async function handler(req, res) {
       console.error('Error fetching blocks:', error);
       return res.status(500).json({ message: 'Failed to fetch blocks' });
     }
+  }
+  
+  // Для всех остальных методов требуется аутентификация
+  const isAuthenticated = await checkAuth(req);
+  if (!isAuthenticated) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
   
   // Обработка POST запроса
