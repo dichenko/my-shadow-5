@@ -131,6 +131,11 @@ export default function BlocksList({ blocks = [] }) {
           margin-left: 1rem;
           opacity: 0.5;
         }
+        
+        a {
+          text-decoration: none;
+          color: inherit;
+        }
       `}</style>
     </div>
   );
