@@ -620,8 +620,7 @@ export default function Admin() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Имя пользователя</th>
-                  <th>Язык</th>
+                  <th>Telegram ID</th>
                   <th>Первый визит</th>
                   <th>Последний визит</th>
                   <th>Кол-во визитов</th>
@@ -631,8 +630,7 @@ export default function Admin() {
                 {users.map((user) => (
                   <tr key={user.id}>
                     <td>{user.id}</td>
-                    <td>{user.username || 'Не указано'}</td>
-                    <td>{user.languageCode || 'Не указано'}</td>
+                    <td>{user.tgId}</td>
                     <td>{new Date(user.firstVisit).toLocaleString()}</td>
                     <td>{new Date(user.lastVisit).toLocaleString()}</td>
                     <td>{user.visitCount}</td>
@@ -652,23 +650,29 @@ export default function Admin() {
                 <tr>
                   <th>ID</th>
                   <th>Вопрос</th>
-                  <th>Пользователь</th>
+                  <th>Пользователь ID</th>
+                  <th>Telegram ID</th>
                   <th>Текст</th>
                   <th>Дата создания</th>
                 </tr>
               </thead>
               <tbody>
-                {answers.map((answer) => (
-                  <tr key={answer.id}>
-                    <td>{answer.id}</td>
-                    <td>{questions.find(q => q.id === answer.questionId)?.text.substring(0, 30) || 'Неизвестно'}...</td>
-                    <td>{users.find(u => u.id === answer.userId)?.username || answer.userId}</td>
-                    <td className="text-cell">
-                      <div className="truncate">{answer.text}</div>
-                    </td>
-                    <td>{new Date(answer.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))}
+                {answers.map((answer) => {
+                  const user = users.find(u => u.id === answer.userId);
+                  const question = questions.find(q => q.id === answer.questionId);
+                  return (
+                    <tr key={answer.id}>
+                      <td>{answer.id}</td>
+                      <td>{question ? question.text.substring(0, 30) + '...' : 'Неизвестно'}</td>
+                      <td>{answer.userId}</td>
+                      <td>{user ? user.tgId : 'Неизвестно'}</td>
+                      <td className="text-cell">
+                        <div className="truncate">{answer.text}</div>
+                      </td>
+                      <td>{new Date(answer.createdAt).toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
