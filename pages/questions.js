@@ -6,7 +6,6 @@ import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
-import QuestionCard from '../components/QuestionCard';
 
 export default function Questions() {
   const { user, loading: userLoading } = useUser();
