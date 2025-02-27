@@ -7,17 +7,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('Выход из админ-панели');
+    
     // Создаем cookie с истекшим сроком действия
     const cookie = serialize('adminToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: -1, // Истекший срок действия
+      sameSite: 'lax',
+      maxAge: -1, // Устанавливаем отрицательное значение для удаления cookie
       path: '/',
     });
 
     // Устанавливаем cookie
     res.setHeader('Set-Cookie', cookie);
+    console.log('Cookie удален');
 
     return res.status(200).json({ success: true, message: 'Успешный выход' });
   } catch (error) {

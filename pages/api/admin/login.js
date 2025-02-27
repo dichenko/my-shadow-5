@@ -25,6 +25,10 @@ export default async function handler(req, res) {
 
     console.log('Учетные данные верны, создаем cookie');
     
+    // Получаем домен из заголовка хоста
+    const host = req.headers.host || '';
+    console.log('Хост запроса:', host);
+    
     // Создаем cookie с токеном администратора
     const cookie = serialize('adminToken', process.env.ADMIN_PASSWORD, {
       httpOnly: true,
@@ -32,15 +36,24 @@ export default async function handler(req, res) {
       sameSite: 'lax', // Изменено с 'strict' на 'lax' для лучшей совместимости
       maxAge: 60 * 60 * 24 * 7, // 7 дней
       path: '/',
+      // Не устанавливаем domain, чтобы cookie работал на текущем домене
     });
 
     // Устанавливаем cookie
     res.setHeader('Set-Cookie', cookie);
     console.log('Cookie установлен:', cookie);
+    
+    // Добавляем заголовок Cache-Control для предотвращения кэширования
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
 
-    return res.status(200).json({ success: true, message: 'Успешная аутентификация' });
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Успешная аутентификация',
+      // Добавляем временную метку для предотвращения кэширования
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Ошибка при аутентификации:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 } 

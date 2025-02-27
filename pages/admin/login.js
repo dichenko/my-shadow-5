@@ -7,6 +7,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   // Проверяем, авторизован ли пользователь
@@ -14,7 +15,12 @@ export default function Login() {
     async function checkAuth() {
       try {
         const res = await fetch('/api/admin/check');
-        if (res.ok) {
+        const data = await res.json();
+        
+        console.log('Проверка аутентификации при загрузке:', data);
+        
+        if (res.ok && data.authenticated) {
+          console.log('Пользователь уже авторизован, перенаправляем на /admin');
           router.push('/admin');
         }
       } catch (error) {
@@ -24,6 +30,18 @@ export default function Login() {
     
     checkAuth();
   }, [router]);
+
+  // Эффект для перенаправления после успешной аутентификации
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        console.log('Перенаправление на /admin после успешной аутентификации');
+        router.push('/admin');
+      }, 1000); // Задержка в 1 секунду для установки cookie
+      
+      return () => clearTimeout(timer);
+    }
+  }, [success, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,8 +70,19 @@ export default function Login() {
         return;
       }
       
-      // Перенаправляем на админ-панель
-      router.push('/admin');
+      console.log('Успешная аутентификация, ожидание установки cookie');
+      setSuccess(true);
+      
+      // Дополнительная проверка аутентификации после входа
+      setTimeout(async () => {
+        try {
+          const checkRes = await fetch('/api/admin/check');
+          const checkData = await checkRes.json();
+          console.log('Повторная проверка аутентификации:', checkData);
+        } catch (error) {
+          console.error('Ошибка при повторной проверке:', error);
+        }
+      }, 500);
     } catch (error) {
       console.error('Ошибка при входе:', error);
       setError('Произошла ошибка при входе');
@@ -73,6 +102,7 @@ export default function Login() {
         <h1>Вход в админ-панель</h1>
         
         {error && <div className="error">{error}</div>}
+        {success && <div className="success">Успешная аутентификация! Перенаправление...</div>}
         
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
@@ -82,7 +112,7 @@ export default function Login() {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              disabled={loading}
+              disabled={loading || success}
               required
             />
           </div>
@@ -94,13 +124,13 @@ export default function Login() {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
+              disabled={loading || success}
               required
             />
           </div>
           
-          <button type="submit" disabled={loading}>
-            {loading ? 'Вход...' : 'Войти'}
+          <button type="submit" disabled={loading || success}>
+            {loading ? 'Вход...' : success ? 'Успешно!' : 'Войти'}
           </button>
         </form>
       </div>
@@ -133,6 +163,15 @@ export default function Login() {
         .error {
           background-color: #f8d7da;
           color: #721c24;
+          padding: 0.75rem;
+          margin-bottom: 1rem;
+          border-radius: 4px;
+          text-align: center;
+        }
+        
+        .success {
+          background-color: #d4edda;
+          color: #155724;
           padding: 0.75rem;
           margin-bottom: 1rem;
           border-radius: 4px;
@@ -174,7 +213,8 @@ export default function Login() {
         }
         
         button:disabled {
-          background-color: #cccccc;
+          background-color: ${success ? '#4CAF50' : '#cccccc'};
+          opacity: ${success ? '0.8' : '1'};
           cursor: not-allowed;
         }
       `}</style>
