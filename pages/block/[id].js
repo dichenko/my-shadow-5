@@ -57,6 +57,13 @@ export default function BlockQuestions() {
     
     try {
       setSubmitting(true);
+      setError(null);
+      
+      console.log('Отправка ответа:', {
+        questionId: currentQuestion.id,
+        userId: user.id,
+        text: answer
+      });
       
       const response = await fetch('/api/answers', {
         method: 'POST',
@@ -70,9 +77,14 @@ export default function BlockQuestions() {
         }),
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Не удалось сохранить ответ');
+        console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
+        throw new Error(data.error || 'Не удалось сохранить ответ');
       }
+      
+      console.log('Ответ успешно сохранен:', data);
       
       // Переходим к следующему вопросу или возвращаемся на страницу блоков
       if (currentQuestionIndex < questions.length - 1) {
@@ -83,7 +95,7 @@ export default function BlockQuestions() {
       }
     } catch (err) {
       console.error('Ошибка при отправке ответа:', err);
-      setError('Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
+      setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
     } finally {
       setSubmitting(false);
     }
