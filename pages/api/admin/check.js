@@ -11,11 +11,19 @@ export default async function handler(req, res) {
     const cookies = parse(req.headers.cookie || '');
     const adminToken = cookies.adminToken;
     
+    // Логируем значения для отладки
+    console.log('Проверка аутентификации администратора:');
+    console.log('Cookie adminToken:', adminToken);
+    console.log('ADMIN_PASSWORD из env:', process.env.ADMIN_PASSWORD);
+    console.log('Совпадение:', adminToken === process.env.ADMIN_PASSWORD);
+    
     // Проверяем токен администратора
     if (adminToken === process.env.ADMIN_PASSWORD) {
+      console.log('Аутентификация успешна');
       return res.status(200).json({ authenticated: true });
     }
     
+    console.log('Аутентификация не удалась');
     return res.status(401).json({ authenticated: false });
   } catch (error) {
     console.error('Ошибка при проверке аутентификации:', error);
