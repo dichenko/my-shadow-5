@@ -2,147 +2,107 @@ import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
 import BottomMenu from '../components/BottomMenu';
 import { useUser } from '../utils/context';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchPairCode, fetchMatchingDesires, createPair, deletePair } from '../utils/api';
 
 export default function Pair() {
   const { user, loading: userLoading } = useUser();
-  const [pairCode, setPairCode] = useState(null);
-  const [hasPair, setHasPair] = useState(false);
+  const queryClient = useQueryClient();
   const [partnerCode, setPartnerCode] = useState('');
-  const [matchingDesires, setMatchingDesires] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const codeRef = useRef(null);
 
-  // Получаем код пары
+  // Получаем код пары с использованием React Query
+  const { 
+    data: pairData = {}, 
+    isLoading: pairLoading,
+    error: pairError
+  } = useQuery({
+    queryKey: ['pair-code'],
+    queryFn: fetchPairCode,
+    enabled: !userLoading && !!user,
+    staleTime: 10 * 60 * 1000, // 10 минут
+  });
+
+  const pairCode = pairData.pairCode;
+  const hasPair = pairData.hasPair;
+
+  // Получаем совпадающие желания с использованием React Query
+  const { 
+    data: matchingData = {}, 
+    isLoading: matchingLoading,
+    error: matchingError
+  } = useQuery({
+    queryKey: ['matching-desires'],
+    queryFn: fetchMatchingDesires,
+    enabled: !!hasPair,
+    staleTime: 10 * 60 * 1000, // 10 минут
+  });
+
+  const matchingDesires = matchingData.matchingDesires || [];
+
+  // Мутация для создания пары
+  const createPairMutation = useMutation({
+    mutationFn: (code) => createPair(code),
+    onSuccess: () => {
+      setSuccess('Пара успешно создана!');
+      setPartnerCode('');
+      // Инвалидируем кэш, чтобы обновить данные
+      queryClient.invalidateQueries({ queryKey: ['pair-code'] });
+      queryClient.invalidateQueries({ queryKey: ['matching-desires'] });
+    },
+    onError: (err) => {
+      setError(err.message || 'Не удалось создать пару');
+    }
+  });
+
+  // Мутация для удаления пары
+  const deletePairMutation = useMutation({
+    mutationFn: deletePair,
+    onSuccess: () => {
+      setSuccess('Пара успешно удалена');
+      setDeleteConfirm(false);
+      // Инвалидируем кэш, чтобы обновить данные
+      queryClient.invalidateQueries({ queryKey: ['pair-code'] });
+      queryClient.invalidateQueries({ queryKey: ['matching-desires'] });
+    },
+    onError: (err) => {
+      setError(err.message || 'Не удалось удалить пару');
+    }
+  });
+
+  // Обрабатываем ошибки запросов
   useEffect(() => {
-    if (!userLoading && user) {
-      fetchPairCode();
+    if (pairError) {
+      setError('Не удалось получить код пары');
+      console.error(pairError);
     }
-  }, [userLoading, user]);
-
-  // Получаем совпадающие желания, если есть пара
-  useEffect(() => {
-    if (hasPair) {
-      fetchMatchingDesires();
+    if (matchingError) {
+      setError('Не удалось получить совпадающие желания');
+      console.error(matchingError);
     }
-  }, [hasPair]);
-
-  // Функция для получения кода пары
-  const fetchPairCode = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/pair-code');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setPairCode(data.pairCode);
-        setHasPair(data.hasPair);
-      } else {
-        setError(data.error || 'Не удалось получить код пары');
-      }
-    } catch (err) {
-      setError('Ошибка при получении кода пары');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Функция для получения совпадающих желаний
-  const fetchMatchingDesires = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/matching-desires');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setMatchingDesires(data.matchingDesires || []);
-      } else {
-        setError(data.error || 'Не удалось получить совпадающие желания');
-      }
-    } catch (err) {
-      setError('Ошибка при получении совпадающих желаний');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [pairError, matchingError]);
 
   // Функция для создания пары
-  const createPair = async () => {
+  const handleCreatePair = async () => {
     if (!partnerCode) {
       setError('Введите код партнера');
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-      
-      const response = await fetch('/api/create-pair', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pairCode: partnerCode }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setSuccess('Пара успешно создана!');
-        setPartnerCode('');
-        // Обновляем информацию о паре
-        fetchPairCode();
-      } else {
-        setError(data.error || 'Не удалось создать пару');
-      }
-    } catch (err) {
-      setError('Ошибка при создании пары');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    setError(null);
+    setSuccess(null);
+    createPairMutation.mutate(partnerCode);
   };
 
   // Функция для удаления пары
-  const deletePair = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-      
-      const response = await fetch('/api/delete-pair', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setSuccess('Пара успешно удалена!');
-        setDeleteConfirm(false);
-        // Обновляем информацию о паре
-        fetchPairCode();
-      } else {
-        setError(data.error || 'Не удалось удалить пару');
-      }
-    } catch (err) {
-      setError('Ошибка при удалении пары');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const handleDeletePair = async () => {
+    setError(null);
+    setSuccess(null);
+    deletePairMutation.mutate();
   };
 
   // Функция для копирования кода
@@ -154,25 +114,28 @@ export default function Pair() {
           setCopySuccess(true);
           setTimeout(() => setCopySuccess(false), 2000);
         })
-        .catch(err => {
-          console.error('Не удалось скопировать код:', err);
+        .catch(() => {
+          setError('Не удалось скопировать код');
         });
     }
   };
 
-  // Функция для отображения типа ответа
+  // Функция для отображения текста ответа
   const getAnswerText = (answer) => {
     switch (answer) {
       case 'yes':
-        return 'Да';
-      case 'maybe':
-        return 'Не уверен(а)';
+        return 'ХОЧУ';
       case 'no':
-        return 'Нет';
+        return 'НЕ ХОЧУ';
+      case 'maybe':
+        return 'СОМНЕВАЮСЬ';
       default:
         return answer;
     }
   };
+
+  // Определяем, идет ли загрузка
+  const isLoading = userLoading || pairLoading || (hasPair && matchingLoading) || createPairMutation.isPending || deletePairMutation.isPending;
 
   return (
     <div className="container">
@@ -186,13 +149,13 @@ export default function Pair() {
         <div className="pair-container">
           <h1>Моя пара</h1>
           
-          {loading && <div className="loading">Загрузка...</div>}
+          {isLoading && <div className="loading">Загрузка...</div>}
           
           {error && <div className="error">{error}</div>}
           
           {success && <div className="success">{success}</div>}
           
-          {!loading && !hasPair && (
+          {!isLoading && !hasPair && (
             <div className="no-pair">
               <div className="pair-code-section">
                 <h2>Ваш код пары</h2>
@@ -232,8 +195,8 @@ export default function Pair() {
                   />
                   <button 
                     className="create-button" 
-                    onClick={createPair}
-                    disabled={loading || !partnerCode}
+                    onClick={handleCreatePair}
+                    disabled={isLoading || !partnerCode}
                   >
                     Создать пару
                   </button>
@@ -242,7 +205,7 @@ export default function Pair() {
             </div>
           )}
           
-          {!loading && hasPair && (
+          {!isLoading && hasPair && (
             <div className="has-pair">
               <div className="pair-status">
                 <div className="pair-icon">👥</div>
@@ -261,8 +224,8 @@ export default function Pair() {
                     <div className="confirm-buttons">
                       <button 
                         className="confirm-yes" 
-                        onClick={deletePair}
-                        disabled={loading}
+                        onClick={handleDeletePair}
+                        disabled={isLoading}
                       >
                         Да
                       </button>

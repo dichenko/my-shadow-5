@@ -76,4 +76,72 @@ export async function submitAnswer(answerData) {
   }
   
   return response.json();
+}
+
+/**
+ * Получение кода пары
+ * @returns {Promise<Object>} - Информация о коде пары
+ */
+export async function fetchPairCode() {
+  const response = await fetch('/api/pair-code');
+  
+  if (!response.ok) {
+    throw new Error('Не удалось получить код пары');
+  }
+  
+  return response.json();
+}
+
+/**
+ * Получение совпадающих желаний
+ * @returns {Promise<Object>} - Информация о совпадающих желаниях
+ */
+export async function fetchMatchingDesires() {
+  const response = await fetch('/api/matching-desires');
+  
+  if (!response.ok) {
+    throw new Error('Не удалось получить совпадающие желания');
+  }
+  
+  return response.json();
+}
+
+/**
+ * Создание пары
+ * @param {string} pairCode - Код партнера
+ * @returns {Promise<Object>} - Результат создания пары
+ */
+export async function createPair(pairCode) {
+  const response = await fetch('/api/create-pair', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ pairCode }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Не удалось создать пару');
+  }
+  
+  return response.json();
+}
+
+/**
+ * Удаление пары
+ * @returns {Promise<Object>} - Результат удаления пары
+ */
+export async function deletePair() {
+  const response = await fetch('/api/delete-pair', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Не удалось удалить пару');
+  }
+  
+  return response.json();
 } 
