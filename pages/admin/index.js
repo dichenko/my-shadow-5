@@ -28,56 +28,103 @@ export default function Admin() {
   const [editingItem, setEditingItem] = useState(null);
   const [editData, setEditData] = useState({});
   
-  // Проверка аутентификации и загрузка данных
+  // Загрузка данных при монтировании компонента
   useEffect(() => {
+    let isMounted = true; // Флаг для предотвращения обновления состояния после размонтирования
+    
     async function fetchData() {
       try {
         setLoading(true);
         
-        // Загружаем данные
+        // Проверяем авторизацию
+        const authRes = await fetch('/api/admin/check', { credentials: 'include' });
+        
+        if (!authRes.ok) {
+          console.log('Не авторизован, перенаправление на страницу входа');
+          router.replace('/admin/login');
+          return; // Прекращаем выполнение функции
+        }
+        
+        if (!isMounted) return; // Проверяем, что компонент все еще смонтирован
+        
+        // Загружаем данные только если авторизованы
         const [practicesRes, blocksRes, questionsRes, usersRes, answersRes] = await Promise.all([
           fetch('/api/practices'),
           fetch('/api/blocks'),
           fetch('/api/questions'),
           fetch('/api/users'),
-          fetch('/api/answers'),
+          fetch('/api/answers')
         ]);
         
-        // Проверяем ответы для аутентификации
-        if (practicesRes.status === 401 || blocksRes.status === 401 || questionsRes.status === 401) {
-          router.replace('/admin/login');
-          return;
-        }
+        if (!isMounted) return; // Проверяем еще раз после асинхронных операций
         
         // Обрабатываем ответы
-        const practicesData = practicesRes.ok ? await practicesRes.json() : [];
-        const blocksData = blocksRes.ok ? await blocksRes.json() : [];
-        const questionsData = questionsRes.ok ? await questionsRes.json() : [];
-        const usersData = usersRes.ok ? await usersRes.json() : [];
-        const answersData = answersRes.ok ? await answersRes.json() : [];
+        if (practicesRes.ok) {
+          const data = await practicesRes.json();
+          setPractices(data);
+        }
         
-        // Обновляем состояние
-        setPractices(practicesData);
-        setBlocks(blocksData);
-        setQuestions(questionsData);
-        setUsers(usersData);
-        setAnswers(answersData);
+        if (blocksRes.ok) {
+          const data = await blocksRes.json();
+          setBlocks(data);
+        }
+        
+        if (questionsRes.ok) {
+          const data = await questionsRes.json();
+          setQuestions(data);
+        }
+        
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          setUsers(data);
+        }
+        
+        if (answersRes.ok) {
+          const data = await answersRes.json();
+          setAnswers(data);
+        }
       } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-        setError('Не удалось загрузить данные');
+        if (isMounted) {
+          console.error('Ошибка при загрузке данных:', error);
+          setError('Не удалось загрузить данные');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     
     fetchData();
+    
+    // Функция очистки для предотвращения утечек памяти
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
   
   // Функция выхода из админ-панели
   const handleLogout = async () => {
     try {
-      await fetch('/api/admin/logout', { method: 'POST' });
-      router.replace('/admin/login');
+      console.log('Выполняется выход из админ-панели...');
+      const res = await fetch('/api/admin/logout', { 
+        method: 'POST',
+        credentials: 'include' // Важно для работы с cookie
+      });
+      
+      if (res.ok) {
+        console.log('Выход успешен, очищаем localStorage и перенаправляем...');
+        // Очищаем сохраненный токен из localStorage
+        localStorage.removeItem('adminToken');
+        
+        // Добавляем небольшую задержку перед перенаправлением
+        setTimeout(() => {
+          // Используем window.location для надежного перенаправления
+          window.location.href = '/admin/login';
+        }, 300);
+      } else {
+        console.error('Ошибка при выходе:', await res.json());
+      }
     } catch (error) {
       console.error('Ошибка при выходе:', error);
     }
