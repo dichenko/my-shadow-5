@@ -25,20 +25,19 @@ export default async function handler(req, res) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  // Обработка GET запроса для получения списка ответов
+  // Обработка GET запроса для получения списка пользователей
   if (req.method === 'GET') {
     try {
-      const answers = await prisma.answer.findMany({
+      const users = await prisma.telegramUser.findMany({
         orderBy: {
-          id: 'desc',
+          id: 'asc',
         },
-        take: 100, // Ограничиваем количество ответов для производительности
       });
       
-      return res.status(200).json(answers);
+      return res.status(200).json(users);
     } catch (error) {
-      console.error('Error fetching answers:', error);
-      return res.status(500).json({ message: 'Failed to fetch answers' });
+      console.error('Error fetching users:', error);
+      return res.status(500).json({ message: 'Failed to fetch users' });
     }
   }
   
