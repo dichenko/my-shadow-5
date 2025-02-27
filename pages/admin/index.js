@@ -35,17 +35,38 @@ export default function Admin() {
   useEffect(() => {
     let isMounted = true; // Флаг для предотвращения обновления состояния после размонтирования
     
-    // Если выполняется выход, не загружаем данные
+    // Немедленно прекращаем выполнение, если выполняется выход
     if (isLoggingOut) {
+      console.log('Компонент в процессе выхода, запросы блокированы');
       return;
     }
     
+    // ID для хранения таймеров и интервалов
+    const timers = [];
+    
     async function fetchData() {
       try {
+        // Проверяем, что компонент все еще активен перед запросом
+        if (!isMounted || isLoggingOut) {
+          console.log('Компонент размонтирован или в процессе выхода, запрос отменен');
+          return;
+        }
+        
         setLoading(true);
         
         // Проверяем авторизацию
-        const authRes = await fetch('/api/admin/check', { credentials: 'include' });
+        const authRes = await fetch('/api/admin/check', { 
+          credentials: 'include',
+          // Добавляем случайный параметр для предотвращения кэширования
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+        
+        // Повторная проверка после запроса
+        if (!isMounted || isLoggingOut) return;
         
         if (!authRes.ok) {
           console.log('Не авторизован, перенаправление на страницу входа');
@@ -53,51 +74,68 @@ export default function Admin() {
           return; // Прекращаем выполнение функции
         }
         
-        if (!isMounted || isLoggingOut) return; // Проверяем, что компонент все еще смонтирован и не выполняется выход
+        // Еще одна проверка после авторизации
+        if (!isMounted || isLoggingOut) return;
         
         // Загружаем данные только если авторизованы
         const [practicesRes, blocksRes, questionsRes, usersRes, answersRes] = await Promise.all([
-          fetch('/api/practices', { credentials: 'include' }),
-          fetch('/api/blocks', { credentials: 'include' }),
-          fetch('/api/questions', { credentials: 'include' }),
-          fetch('/api/users', { credentials: 'include' }),
-          fetch('/api/answers', { credentials: 'include' })
+          fetch('/api/practices', { 
+            credentials: 'include',
+            headers: { 'Cache-Control': 'no-cache' }
+          }),
+          fetch('/api/blocks', { 
+            credentials: 'include',
+            headers: { 'Cache-Control': 'no-cache' }
+          }),
+          fetch('/api/questions', { 
+            credentials: 'include',
+            headers: { 'Cache-Control': 'no-cache' }
+          }),
+          fetch('/api/users', { 
+            credentials: 'include',
+            headers: { 'Cache-Control': 'no-cache' }
+          }),
+          fetch('/api/answers', { 
+            credentials: 'include',
+            headers: { 'Cache-Control': 'no-cache' }
+          })
         ]);
         
-        if (!isMounted || isLoggingOut) return; // Проверяем еще раз после асинхронных операций
+        // Проверяем после всех запросов
+        if (!isMounted || isLoggingOut) return;
         
         // Обрабатываем ответы
         if (practicesRes.ok) {
           const data = await practicesRes.json();
-          setPractices(data);
+          if (isMounted && !isLoggingOut) setPractices(data);
         }
         
         if (blocksRes.ok) {
           const data = await blocksRes.json();
-          setBlocks(data);
+          if (isMounted && !isLoggingOut) setBlocks(data);
         }
         
         if (questionsRes.ok) {
           const data = await questionsRes.json();
-          setQuestions(data);
+          if (isMounted && !isLoggingOut) setQuestions(data);
         }
         
         if (usersRes.ok) {
           const data = await usersRes.json();
-          setUsers(data);
+          if (isMounted && !isLoggingOut) setUsers(data);
         }
         
         if (answersRes.ok) {
           const data = await answersRes.json();
-          setAnswers(data);
+          if (isMounted && !isLoggingOut) setAnswers(data);
         }
       } catch (error) {
-        if (isMounted) {
+        if (isMounted && !isLoggingOut) {
           console.error('Ошибка при загрузке данных:', error);
           setError('Не удалось загрузить данные');
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && !isLoggingOut) {
           setLoading(false);
         }
       }
@@ -107,7 +145,16 @@ export default function Admin() {
     
     // Функция очистки для предотвращения утечек памяти
     return () => {
+      console.log('Компонент размонтирован, очистка ресурсов');
       isMounted = false;
+      
+      // Очищаем все таймеры
+      timers.forEach(id => {
+        if (typeof id === 'number') {
+          clearTimeout(id);
+          clearInterval(id);
+        }
+      });
     };
   }, [router, isLoggingOut]);
   
@@ -116,43 +163,42 @@ export default function Admin() {
     try {
       console.log('Выполняется выход из админ-панели...');
       
-      // Устанавливаем флаг выхода
+      // Сразу устанавливаем флаг, чтобы немедленно остановить все запросы
       setIsLoggingOut(true);
       
-      // Сначала очищаем состояние и останавливаем запросы
+      // Очищаем все данные сразу
+      setPractices([]);
+      setBlocks([]);
+      setQuestions([]);
+      setUsers([]);
+      setAnswers([]);
+      
+      // Показываем состояние загрузки
       setLoading(true);
       
-      const res = await fetch('/api/admin/logout', { 
+      // Важно: выход из localStorage сразу
+      localStorage.removeItem('adminToken');
+      
+      // Выполняем запрос на выход
+      await fetch('/api/admin/logout', { 
         method: 'POST',
-        credentials: 'include' // Важно для работы с cookie
+        credentials: 'include'
       });
       
-      if (res.ok) {
-        console.log('Выход успешен, очищаем localStorage и перенаправляем...');
-        // Очищаем сохраненный токен из localStorage
-        localStorage.removeItem('adminToken');
-        
-        // Очищаем данные из состояния
-        setPractices([]);
-        setBlocks([]);
-        setQuestions([]);
-        setUsers([]);
-        setAnswers([]);
-        
-        // Увеличиваем задержку перед перенаправлением
-        setTimeout(() => {
-          // Используем window.location для надежного перенаправления
-          window.location.href = '/admin/login';
-        }, 800);
-      } else {
-        console.error('Ошибка при выходе:', await res.json());
-        // Сбрасываем флаг выхода в случае ошибки
-        setIsLoggingOut(false);
-      }
+      console.log('Выход выполнен, перенаправление...');
+      
+      // Немедленное перенаправление без задержки
+      window.location.replace('/admin/login');
+      
+      // В крайнем случае, если replace не сработает, принудительно перезагружаем страницу
+      setTimeout(() => {
+        window.location.href = '/admin/login';
+      }, 100);
     } catch (error) {
       console.error('Ошибка при выходе:', error);
-      // Сбрасываем флаг выхода в случае ошибки
-      setIsLoggingOut(false);
+      
+      // Даже при ошибке всё равно перенаправляем
+      window.location.replace('/admin/login');
     }
   };
   
