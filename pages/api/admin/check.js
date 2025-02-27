@@ -1,5 +1,6 @@
 import { parse } from 'cookie';
 import { setCorsHeaders, handleCorsOptions } from '../../../utils/cors';
+import { checkAdminAuth } from '../../../utils/auth';
 
 export default async function handler(req, res) {
   // Устанавливаем CORS заголовки и обрабатываем OPTIONS запросы
@@ -16,23 +17,15 @@ export default async function handler(req, res) {
   try {
     console.log('Проверка авторизации администратора');
     
-    // Получаем cookie из запроса
+    // Получаем cookie из запроса для логирования
     const cookieHeader = req.headers.cookie || '';
     console.log('Заголовок Cookie:', cookieHeader);
     
     const cookies = parse(cookieHeader);
     console.log('Полученные cookies:', Object.keys(cookies));
     
-    const adminToken = cookies.adminToken;
-    console.log('Токен администратора:', adminToken ? 'найден' : 'отсутствует');
-    
-    if (adminToken) {
-      console.log('Длина токена:', adminToken.length);
-      console.log('Длина ожидаемого пароля:', process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.length : 0);
-    }
-    
-    // Проверяем токен администратора
-    const isAuthenticated = adminToken === process.env.ADMIN_PASSWORD;
+    // Используем функцию checkAdminAuth для проверки авторизации
+    const isAuthenticated = await checkAdminAuth(req);
     console.log('Результат проверки:', isAuthenticated);
     
     if (isAuthenticated) {
@@ -41,7 +34,13 @@ export default async function handler(req, res) {
         success: true,
         debug: {
           time: new Date().toISOString(),
-          origin: req.headers.origin || 'не указан'
+          origin: req.headers.origin || 'не указан',
+          authMethods: {
+            cookies: Object.keys(cookies),
+            hasNextAuth: !!cookies['__Secure-next-auth.session-token'] || !!cookies['next-auth.session-token'],
+            hasAdminToken: !!cookies.adminToken,
+            hasAuthHeader: !!req.headers.authorization
+          }
         }
       });
     }

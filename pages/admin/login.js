@@ -7,18 +7,56 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
 
   // Проверяем, авторизован ли пользователь
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch('/api/admin/check');
-        if (res.ok) {
+        console.log('Проверка авторизации администратора...');
+        setCheckingAuth(true);
+        
+        const queryParams = new URLSearchParams(window.location.search);
+        const adminKey = queryParams.get('adminKey');
+        
+        // Если есть adminKey в URL, пробуем авторизоваться с его помощью
+        let checkUrl = '/api/admin/check';
+        if (adminKey) {
+          checkUrl = `${checkUrl}?adminKey=${adminKey}`;
+        }
+        
+        const res = await fetch(checkUrl, {
+          credentials: 'include', // Важно для передачи cookie
+          headers: {
+            // Если в localStorage есть adminToken, используем его как Bearer
+            ...(localStorage.getItem('adminToken') && {
+              'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            })
+          }
+        });
+        
+        const data = await res.json();
+        console.log('Результат проверки авторизации:', data);
+        
+        if (res.ok && data.authenticated) {
+          console.log('Администратор авторизован, перенаправление в панель...');
           router.push('/admin');
+        } else {
+          console.log('Администратор не авторизован, отображение формы входа');
+          setDebugInfo({
+            authCheck: {
+              status: res.status,
+              data
+            }
+          });
         }
       } catch (error) {
         console.error('Ошибка при проверке аутентификации:', error);
+        setError('Ошибка при проверке аутентификации: ' + error.message);
+      } finally {
+        setCheckingAuth(false);
       }
     }
     
@@ -36,27 +74,55 @@ export default function Login() {
     try {
       setLoading(true);
       setError('');
+      setDebugInfo(null);
+      
+      console.log('Попытка входа с учетными данными:', { username });
       
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Важно для сохранения cookie
         body: JSON.stringify({ username, password }),
       });
       
       const data = await res.json();
+      console.log('Ответ на запрос входа:', data);
       
       if (!res.ok) {
         setError(data.message || 'Ошибка при входе');
+        setDebugInfo({
+          loginResponse: { status: res.status, data }
+        });
         return;
       }
       
-      // Перенаправляем на админ-панель
-      router.push('/admin');
+      // Сохраняем токен в localStorage в качестве запасного варианта
+      localStorage.setItem('adminToken', password);
+      
+      // Дополнительная проверка авторизации после входа
+      const checkResult = await fetch('/api/admin/check', { 
+        credentials: 'include'
+      });
+      const checkData = await checkResult.json();
+      console.log('Проверка после входа:', checkData);
+      
+      if (checkResult.ok && checkData.authenticated) {
+        // Перенаправляем на админ-панель
+        console.log('Вход успешен, перенаправление в админ-панель');
+        router.push('/admin');
+      } else {
+        console.error('Странно: вход успешен, но проверка не прошла');
+        setError('Произошла ошибка при авторизации. Возможно, cookie не сохранились.');
+        setDebugInfo({
+          loginResponse: { status: res.status, data },
+          checkResponse: { status: checkResult.status, data: checkData }
+        });
+      }
     } catch (error) {
       console.error('Ошибка при входе:', error);
-      setError('Произошла ошибка при входе');
+      setError('Произошла ошибка при входе: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -72,37 +138,68 @@ export default function Login() {
       <div className="login-card">
         <h1>Вход в админ-панель</h1>
         
-        {error && <div className="error">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="username">Имя пользователя</label>
-            <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="password">Пароль</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-          
-          <button type="submit" disabled={loading}>
-            {loading ? 'Вход...' : 'Войти'}
-          </button>
-        </form>
+        {checkingAuth ? (
+          <div className="loading">Проверка авторизации...</div>
+        ) : (
+          <>
+            {error && <div className="error">{error}</div>}
+            
+            {debugInfo && (
+              <div className="debug-info">
+                <h3>Отладочная информация:</h3>
+                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+                
+                <div className="auth-methods">
+                  <h4>Доступные методы авторизации:</h4>
+                  <ul>
+                    <li>
+                      <strong>Cookie:</strong> Основной метод, используется при входе с логином и паролем
+                    </li>
+                    <li>
+                      <strong>NextAuth:</strong> Поддерживается, если вы используете NextAuth в вашем приложении
+                    </li>
+                    <li>
+                      <strong>Bearer Token:</strong> Используйте заголовок Authorization: Bearer {process.env.ADMIN_PASSWORD}
+                    </li>
+                    <li>
+                      <strong>URL параметр:</strong> Используйте параметр ?adminKey={process.env.ADMIN_PASSWORD} (только для тестирования)
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="login-form">
+              <div className="form-group">
+                <label htmlFor="username">Имя пользователя</label>
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="password">Пароль</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+              
+              <button type="submit" disabled={loading}>
+                {loading ? 'Вход...' : 'Войти'}
+              </button>
+            </form>
+          </>
+        )}
       </div>
       
       <style jsx>{`
@@ -120,7 +217,7 @@ export default function Login() {
           border-radius: 8px;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
           width: 100%;
-          max-width: 400px;
+          max-width: 600px;
         }
         
         h1 {
@@ -130,7 +227,7 @@ export default function Login() {
           color: #333;
         }
         
-        .error {
+        .error, .loading {
           background-color: #f8d7da;
           color: #721c24;
           padding: 0.75rem;
@@ -139,9 +236,37 @@ export default function Login() {
           text-align: center;
         }
         
-        .login-form {
-          display: flex;
-          flex-direction: column;
+        .loading {
+          background-color: #e2f3f5;
+          color: #0c5460;
+        }
+        
+        .debug-info {
+          background-color: #f0f8ff;
+          padding: 1rem;
+          border-radius: 4px;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
+          overflow-x: auto;
+        }
+        
+        .debug-info pre {
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+        
+        .auth-methods {
+          margin-top: 1rem;
+          border-top: 1px solid #ddd;
+          padding-top: 1rem;
+        }
+        
+        .auth-methods ul {
+          padding-left: 1.5rem;
+        }
+        
+        .auth-methods li {
+          margin-bottom: 0.5rem;
         }
         
         .form-group {
@@ -163,18 +288,23 @@ export default function Login() {
         }
         
         button {
-          background-color: #4CAF50;
+          width: 100%;
+          padding: 0.75rem;
+          background-color: #4a90e2;
           color: white;
           border: none;
-          padding: 0.75rem;
           border-radius: 4px;
           font-size: 1rem;
           cursor: pointer;
-          margin-top: 1rem;
+          transition: background-color 0.3s;
+        }
+        
+        button:hover {
+          background-color: #3a7bc8;
         }
         
         button:disabled {
-          background-color: #cccccc;
+          background-color: #97bff0;
           cursor: not-allowed;
         }
       `}</style>
