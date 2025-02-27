@@ -28,15 +28,15 @@ export default async function handler(req, res) {
   // Обработка GET запроса
   if (req.method === 'GET') {
     try {
-      const questions = await prisma.question.findMany({
+    const questions = await prisma.question.findMany({
         orderBy: [
           { blockId: 'asc' },
           { order: 'asc' }
         ],
-      });
-      
-      return res.status(200).json(questions);
-    } catch (error) {
+    });
+    
+    return res.status(200).json(questions);
+  } catch (error) {
       console.error('Error fetching questions:', error);
       return res.status(500).json({ message: 'Failed to fetch questions' });
     }
@@ -52,20 +52,20 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Проверяем существование блока и практики
-      const block = await prisma.block.findUnique({
+    // Проверяем существование блока и практики
+    const block = await prisma.block.findUnique({
         where: { id: parseInt(blockId) },
-      });
-      
-      if (!block) {
+    });
+    
+    if (!block) {
         return res.status(400).json({ message: 'Block not found' });
-      }
-      
-      const practice = await prisma.practice.findUnique({
+    }
+    
+    const practice = await prisma.practice.findUnique({
         where: { id: parseInt(practiceId) },
-      });
-      
-      if (!practice) {
+    });
+    
+    if (!practice) {
         return res.status(400).json({ message: 'Practice not found' });
       }
       
@@ -78,18 +78,18 @@ export default async function handler(req, res) {
       const newOrder = maxOrderQuestion ? maxOrderQuestion.order + 1 : 1;
       
       // Создаем новый вопрос
-      const question = await prisma.question.create({
-        data: {
-          text,
+    const question = await prisma.question.create({
+      data: {
+        text,
           blockId: parseInt(blockId),
           practiceId: parseInt(practiceId),
           order: newOrder,
           role: role || 'none',
-        },
-      });
-      
-      return res.status(201).json(question);
-    } catch (error) {
+      },
+    });
+    
+    return res.status(201).json(question);
+  } catch (error) {
       console.error('Error creating question:', error);
       return res.status(500).json({ message: 'Failed to create question' });
     }
