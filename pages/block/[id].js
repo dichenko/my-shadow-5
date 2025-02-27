@@ -31,13 +31,25 @@ export default function BlockQuestions() {
         const blockData = await blockResponse.json();
         setBlock(blockData);
         
-        // Получаем вопросы блока
-        const questionsResponse = await fetch(`/api/questions?blockId=${id}`);
+        // Получаем вопросы блока, исключая те, на которые пользователь уже ответил
+        let url = `/api/questions?blockId=${id}`;
+        if (user && user.id) {
+          url += `&userId=${user.id}`;
+        } else if (user && user.tgId) {
+          url += `&userId=${user.tgId}`;
+        }
+        
+        const questionsResponse = await fetch(url);
         if (!questionsResponse.ok) {
           throw new Error('Не удалось загрузить вопросы блока');
         }
         const questionsData = await questionsResponse.json();
         setQuestions(questionsData);
+        
+        // Если нет вопросов, на которые пользователь еще не ответил, показываем сообщение
+        if (questionsData.length === 0) {
+          setError('Вы уже ответили на все вопросы в этом блоке');
+        }
       } catch (err) {
         console.error('Ошибка при загрузке данных блока:', err);
         setError(err.message || 'Произошла ошибка при загрузке данных');
@@ -47,7 +59,7 @@ export default function BlockQuestions() {
     }
 
     fetchBlockData();
-  }, [id]);
+  }, [id, user]);
 
   // Функция для отправки ответа
   const submitAnswer = async (answer) => {

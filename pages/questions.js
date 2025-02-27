@@ -49,7 +49,16 @@ export default function Questions() {
     async function fetchBlocks() {
       try {
         setLoading(true);
-        const response = await fetch('/api/blocks-with-questions');
+        
+        // Добавляем userId в запрос, если пользователь получен
+        let url = '/api/blocks-with-questions';
+        if (user && user.id) {
+          url += `?userId=${user.id}`;
+        } else if (user && user.tgId) {
+          url += `?userId=${user.tgId}`;
+        }
+        
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Не удалось загрузить блоки вопросов');
         }
@@ -64,7 +73,7 @@ export default function Questions() {
     }
 
     fetchBlocks();
-  }, []);
+  }, [user]);
 
   // Если данные из Telegram не получены в течение 5 секунд, показываем экран с предложением перейти в бот
   if (userLoading && !user) {

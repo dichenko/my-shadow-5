@@ -5,10 +5,69 @@ export default async function handler(req, res) {
   // Обработка GET запроса - доступно без аутентификации
   if (req.method === 'GET') {
     try {
-      const { blockId } = req.query;
+      const { blockId, userId } = req.query;
+      
+      // Если не указан blockId, возвращаем все вопросы
+      if (!blockId) {
+        const questions = await prisma.question.findMany({
+          orderBy: [
+            { order: 'asc' },
+            { id: 'asc' }
+          ],
+          include: {
+            block: true,
+            practice: true
+          }
+        });
+        
+        return res.status(200).json(questions);
+      }
       
       // Если указан blockId, фильтруем вопросы по блоку
-      const where = blockId ? { blockId: parseInt(blockId) } : {};
+      let where = { blockId: parseInt(blockId) };
+      
+      // Если указан userId, исключаем вопросы, на которые пользователь уже ответил
+      if (userId) {
+        // Находим пользователя по id или tgId
+        let user = await prisma.telegramUser.findUnique({
+          where: { id: parseInt(userId) }
+        });
+        
+        // Если пользователь не найден по id, пытаемся найти по tgId
+        if (!user) {
+          user = await prisma.telegramUser.findUnique({
+            where: { tgId: parseInt(userId) }
+          });
+        }
+        
+        if (user) {
+          // Получаем ответы пользователя на вопросы этого блока
+          const answers = await prisma.answer.findMany({
+            where: {
+              userId: user.id,
+              question: {
+                blockId: parseInt(blockId)
+              }
+            },
+            select: {
+              questionId: true
+            }
+          });
+          
+          // Получаем ID вопросов, на которые пользователь уже ответил
+          const answeredQuestionIds = answers.map(answer => answer.questionId);
+          
+          // Исключаем отвеченные вопросы из выборки
+          if (answeredQuestionIds.length > 0) {
+            where = {
+              ...where,
+              id: {
+                notIn: answeredQuestionIds
+              }
+            };
+          }
+        }
+      }
       
       const questions = await prisma.question.findMany({
         where,

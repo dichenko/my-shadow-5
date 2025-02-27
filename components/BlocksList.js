@@ -25,7 +25,22 @@ export default function BlocksList({ blocks = [] }) {
               <div className="block-content">
                 <div className="block-info">
                   <h3 className="block-name">{block.name}</h3>
-                  <span className="block-questions-count">{block.questionsCount || 0} вопросов</span>
+                  <span className="block-questions-count">
+                    {block.questionsCount || 0} вопросов
+                    {block.answeredCount !== undefined && (
+                      <span className="block-progress"> • Отвечено: {block.answeredCount}/{block.questionsCount}</span>
+                    )}
+                  </span>
+                  {block.answeredCount !== undefined && block.questionsCount > 0 && (
+                    <div className="progress-bar-container">
+                      <div 
+                        className="progress-bar" 
+                        style={{ 
+                          width: `${(block.answeredCount / block.questionsCount) * 100}%` 
+                        }}
+                      ></div>
+                    </div>
+                  )}
                 </div>
                 <div className="block-arrow">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -88,6 +103,26 @@ export default function BlocksList({ blocks = [] }) {
         .block-questions-count {
           font-size: 0.875rem;
           color: var(--tg-theme-hint-color);
+        }
+        
+        .block-progress {
+          font-size: 0.875rem;
+          color: var(--tg-theme-hint-color);
+        }
+        
+        .progress-bar-container {
+          height: 4px;
+          background-color: rgba(0, 0, 0, 0.05);
+          border-radius: 2px;
+          margin-top: 0.5rem;
+          overflow: hidden;
+        }
+        
+        .progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #6b66ff, #ff6b6b);
+          border-radius: 2px;
+          transition: width 0.3s ease;
         }
         
         .block-arrow {

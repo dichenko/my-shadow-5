@@ -10,6 +10,7 @@ export default async function handler(req, res) {
 
   try {
     const { id } = req.query;
+    const userId = req.query.userId; // Получаем userId из запроса
     
     // Если указан id, возвращаем конкретный блок с вопросами (доступно без аутентификации)
     if (id) {
@@ -61,10 +62,42 @@ export default async function handler(req, res) {
           }
         });
         
+        let answeredCount = 0;
+        
+        // Если передан userId, получаем количество отвеченных вопросов
+        if (userId) {
+          // Находим пользователя по id или tgId
+          let user = await prisma.telegramUser.findUnique({
+            where: { id: parseInt(userId) }
+          });
+          
+          // Если пользователь не найден по id, пытаемся найти по tgId
+          if (!user) {
+            user = await prisma.telegramUser.findUnique({
+              where: { tgId: parseInt(userId) }
+            });
+          }
+          
+          if (user) {
+            // Получаем ответы пользователя на вопросы этого блока
+            const answers = await prisma.answer.findMany({
+              where: {
+                userId: user.id,
+                question: {
+                  blockId: block.id
+                }
+              }
+            });
+            
+            answeredCount = answers.length;
+          }
+        }
+        
         return {
           ...block,
           questions,
-          questionsCount: questions.length
+          questionsCount: questions.length,
+          answeredCount: answeredCount
         };
       })
     );
