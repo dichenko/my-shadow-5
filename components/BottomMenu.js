@@ -36,36 +36,8 @@ export default function BottomMenu({ activePage = 'questions' }) {
     }
   }, [router.pathname]);
 
-  // Получаем текущий индекс страницы для индикатора прогресса
-  const getCurrentPageIndex = () => {
-    if (active === 'questions') return 0;
-    if (active === 'pair') return 1;
-    if (active === 'settings') return 2;
-    return 0;
-  };
-
   return (
     <div className="bottom-menu">
-      <div className="progress-indicator">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ 
-              width: `${(getCurrentPageIndex() / (pageOrder.length - 1)) * 100}%`,
-              transition: 'width 0.3s ease-out'
-            }}
-          ></div>
-        </div>
-        <div className="progress-dots">
-          {pageOrder.map((_, index) => (
-            <div 
-              key={index} 
-              className={`progress-dot ${getCurrentPageIndex() === index ? 'active' : ''}`}
-            ></div>
-          ))}
-        </div>
-      </div>
-      
       <Link href="/questions" className={`menu-item ${active === 'questions' ? 'active' : ''} ${prevActive === 'questions' && animating ? 'prev-active' : ''}`}>
         <div className="icon-container">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,7 +45,6 @@ export default function BottomMenu({ activePage = 'questions' }) {
           </svg>
         </div>
         <span>Вопросы</span>
-        {active === 'questions' && <div className="active-indicator"></div>}
       </Link>
       
       <Link href="/pair" className={`menu-item ${active === 'pair' ? 'active' : ''} ${prevActive === 'pair' && animating ? 'prev-active' : ''}`}>
@@ -83,7 +54,6 @@ export default function BottomMenu({ activePage = 'questions' }) {
           </svg>
         </div>
         <span>Моя пара</span>
-        {active === 'pair' && <div className="active-indicator"></div>}
       </Link>
       
       <Link href="/settings" className={`menu-item ${active === 'settings' ? 'active' : ''} ${prevActive === 'settings' && animating ? 'prev-active' : ''}`}>
@@ -94,7 +64,6 @@ export default function BottomMenu({ activePage = 'questions' }) {
           </svg>
         </div>
         <span>Настройки</span>
-        {active === 'settings' && <div className="active-indicator"></div>}
       </Link>
 
       <style jsx>{`
@@ -111,52 +80,6 @@ export default function BottomMenu({ activePage = 'questions' }) {
           padding: 0.5rem 0;
           z-index: 100;
           box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-          flex-wrap: wrap;
-        }
-        
-        .progress-indicator {
-          position: absolute;
-          top: -10px;
-          left: 0;
-          right: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 0 20px;
-        }
-        
-        .progress-bar {
-          width: 100%;
-          height: 3px;
-          background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-          border-radius: 3px;
-          overflow: hidden;
-          margin-bottom: 5px;
-        }
-        
-        .progress-fill {
-          height: 100%;
-          background-color: var(--tg-theme-button-color, #2481cc);
-          border-radius: 3px;
-        }
-        
-        .progress-dots {
-          display: flex;
-          justify-content: space-between;
-          width: 60px;
-        }
-        
-        .progress-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-          transition: all 0.3s ease;
-        }
-        
-        .progress-dot.active {
-          background-color: var(--tg-theme-button-color, #2481cc);
-          transform: scale(1.5);
         }
         
         .menu-item {
@@ -171,7 +94,6 @@ export default function BottomMenu({ activePage = 'questions' }) {
           text-align: center;
           border-radius: 12px;
           position: relative;
-          overflow: hidden;
         }
         
         .icon-container {
@@ -179,8 +101,8 @@ export default function BottomMenu({ activePage = 'questions' }) {
           justify-content: center;
           align-items: center;
           margin-bottom: 0.25rem;
-          width: 40px;
-          height: 40px;
+          width: 48px;
+          height: 48px;
           border-radius: 50%;
           transition: all 0.3s ease;
         }
@@ -198,77 +120,37 @@ export default function BottomMenu({ activePage = 'questions' }) {
         
         .menu-item.active {
           color: var(--tg-theme-button-color, #2481cc);
-          transform: translateY(-5px);
         }
         
         .menu-item.active .icon-container {
           background-color: rgba(36, 129, 204, 0.15);
-          transform: scale(1.1);
+          transform: scale(1.2);
+          box-shadow: 0 4px 8px rgba(36, 129, 204, 0.3);
         }
         
         .menu-item.active svg {
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           stroke-width: 2.5;
+          filter: drop-shadow(0 2px 3px rgba(36, 129, 204, 0.3));
         }
         
         .menu-item.active span {
-          font-size: 0.85rem;
+          font-size: 0.9rem;
           font-weight: bold;
-        }
-        
-        .active-indicator {
-          position: absolute;
-          bottom: -2px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 40px;
-          height: 4px;
-          background-color: var(--tg-theme-button-color, #2481cc);
-          border-radius: 4px 4px 0 0;
-          animation: slideIn 0.3s ease-out;
+          margin-top: 0.3rem;
         }
         
         .menu-item.prev-active {
           animation: fadeOut 0.3s ease-out;
         }
         
-        @keyframes slideIn {
-          from {
-            width: 0;
-            opacity: 0;
-          }
-          to {
-            width: 40px;
-            opacity: 1;
-          }
-        }
-        
         @keyframes fadeOut {
           from {
             color: var(--tg-theme-button-color, #2481cc);
-            transform: translateY(-5px);
           }
           to {
             color: var(--tg-theme-hint-color, #999999);
-            transform: translateY(0);
-          }
-        }
-        
-        /* Добавляем пульсацию для активного элемента */
-        .menu-item.active .icon-container {
-          animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(36, 129, 204, 0.4);
-          }
-          70% {
-            box-shadow: 0 0 0 10px rgba(36, 129, 204, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(36, 129, 204, 0);
           }
         }
       `}</style>
