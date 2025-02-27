@@ -19,27 +19,33 @@ async function checkAuth(req) {
 }
 
 export default async function handler(req, res) {
-  // Проверка аутентификации
-  const isAuthenticated = await checkAuth(req);
-  if (!isAuthenticated) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
-  // Обработка GET запроса
+  // Обработка GET запроса - доступно без аутентификации
   if (req.method === 'GET') {
     try {
-    const questions = await prisma.question.findMany({
+      const { blockId } = req.query;
+      
+      // Если указан blockId, фильтруем вопросы по блоку
+      const where = blockId ? { blockId: parseInt(blockId) } : {};
+      
+      const questions = await prisma.question.findMany({
+        where,
         orderBy: [
-          { blockId: 'asc' },
-          { order: 'asc' }
+          { order: 'asc' },
+          { id: 'asc' }
         ],
-    });
-    
-    return res.status(200).json(questions);
-  } catch (error) {
+      });
+      
+      return res.status(200).json(questions);
+    } catch (error) {
       console.error('Error fetching questions:', error);
       return res.status(500).json({ message: 'Failed to fetch questions' });
     }
+  }
+  
+  // Для всех остальных методов требуется аутентификация
+  const isAuthenticated = await checkAuth(req);
+  if (!isAuthenticated) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
   
   // Обработка POST запроса
@@ -52,20 +58,20 @@ export default async function handler(req, res) {
     }
     
     try {
-    // Проверяем существование блока и практики
-    const block = await prisma.block.findUnique({
+      // Проверяем существование блока и практики
+      const block = await prisma.block.findUnique({
         where: { id: parseInt(blockId) },
-    });
-    
-    if (!block) {
+      });
+      
+      if (!block) {
         return res.status(400).json({ message: 'Block not found' });
-    }
-    
-    const practice = await prisma.practice.findUnique({
+      }
+      
+      const practice = await prisma.practice.findUnique({
         where: { id: parseInt(practiceId) },
-    });
-    
-    if (!practice) {
+      });
+      
+      if (!practice) {
         return res.status(400).json({ message: 'Practice not found' });
       }
       
@@ -78,18 +84,18 @@ export default async function handler(req, res) {
       const newOrder = maxOrderQuestion ? maxOrderQuestion.order + 1 : 1;
       
       // Создаем новый вопрос
-    const question = await prisma.question.create({
-      data: {
-        text,
+      const question = await prisma.question.create({
+        data: {
+          text,
           blockId: parseInt(blockId),
           practiceId: parseInt(practiceId),
           order: newOrder,
           role: role || 'none',
-      },
-    });
-    
-    return res.status(201).json(question);
-  } catch (error) {
+        },
+      });
+      
+      return res.status(201).json(question);
+    } catch (error) {
       console.error('Error creating question:', error);
       return res.status(500).json({ message: 'Failed to create question' });
     }

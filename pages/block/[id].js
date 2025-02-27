@@ -2,17 +2,19 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import UserPhoto from '../../components/UserPhoto';
-import BottomMenu from '../../components/BottomMenu';
+import { useUser } from '../../utils/context';
 
 export default function BlockQuestions() {
   const router = useRouter();
   const { id } = router.query;
+  const { user } = useUser();
   
   const [block, setBlock] = useState(null);
   const [questions, setQuestions] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     async function fetchBlockData() {
@@ -47,6 +49,49 @@ export default function BlockQuestions() {
     fetchBlockData();
   }, [id]);
 
+  // Функция для отправки ответа
+  const submitAnswer = async (answer) => {
+    if (!user || !questions.length || submitting) return;
+    
+    const currentQuestion = questions[currentQuestionIndex];
+    
+    try {
+      setSubmitting(true);
+      
+      const response = await fetch('/api/answers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionId: currentQuestion.id,
+          userId: user.id,
+          text: answer, // "yes", "no", "maybe"
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Не удалось сохранить ответ');
+      }
+      
+      // Переходим к следующему вопросу или возвращаемся на страницу блоков
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      } else {
+        // Если это был последний вопрос, возвращаемся на страницу блоков
+        router.push('/questions');
+      }
+    } catch (err) {
+      console.error('Ошибка при отправке ответа:', err);
+      setError('Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Получаем текущий вопрос
+  const currentQuestion = questions[currentQuestionIndex];
+
   return (
     <div className="container">
       <Head>
@@ -55,47 +100,63 @@ export default function BlockQuestions() {
         <meta name="description" content="Вопросы блока в MyShadowApp" />
       </Head>
 
-      <UserPhoto />
-
       <div className="back-button">
         <Link href="/questions">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span>Назад</span>
         </Link>
       </div>
+
+      {questions.length > 0 && (
+        <div className="question-counter">
+          {currentQuestionIndex + 1}/{questions.length}
+        </div>
+      )}
 
       <main className="main">
         {loading ? (
           <div className="loading">Загрузка вопросов...</div>
         ) : error ? (
           <div className="error">{error}</div>
+        ) : questions.length === 0 ? (
+          <div className="empty-state">
+            <p>В этом блоке пока нет вопросов</p>
+          </div>
         ) : (
-          <div className="block-content">
-            <h1 className="block-title">{block?.name}</h1>
+          <div className="question-container">
+            <div className="question-card">
+              <p className="question-text">{currentQuestion.text}</p>
+            </div>
             
-            {questions.length === 0 ? (
-              <div className="empty-state">
-                <p>В этом блоке пока нет вопросов</p>
-              </div>
-            ) : (
-              <div className="questions-list">
-                {questions.map((question) => (
-                  <div key={question.id} className="question-card">
-                    <p className="question-text">{question.text}</p>
-                    <div className="question-meta">
-                      <span className="question-role">Роль: {question.role}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="answer-buttons">
+              <button 
+                className="btn btn-want"
+                onClick={() => submitAnswer('yes')}
+                disabled={submitting}
+              >
+                ХОЧУ
+              </button>
+              
+              <button 
+                className="btn btn-dont-want"
+                onClick={() => submitAnswer('no')}
+                disabled={submitting}
+              >
+                НЕ ХОЧУ
+              </button>
+              
+              <button 
+                className="btn btn-maybe"
+                onClick={() => submitAnswer('maybe')}
+                disabled={submitting}
+              >
+                сомневаюсь
+              </button>
+            </div>
           </div>
         )}
       </main>
-
-      <BottomMenu activePage="questions" />
 
       <style jsx>{`
         .container {
@@ -110,8 +171,10 @@ export default function BlockQuestions() {
         
         .main {
           flex: 1;
-          padding-top: 4rem;
-          padding-bottom: 4rem;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 1rem;
         }
         
         .back-button {
@@ -126,11 +189,17 @@ export default function BlockQuestions() {
           align-items: center;
           color: var(--tg-theme-button-color, #2481cc);
           text-decoration: none;
-          font-size: 0.875rem;
         }
         
-        .back-button svg {
-          margin-right: 0.25rem;
+        .question-counter {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          font-size: 1rem;
+          color: var(--tg-theme-hint-color, #999999);
+          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
         }
         
         .loading {
@@ -148,51 +217,80 @@ export default function BlockQuestions() {
           color: var(--tg-theme-destructive-text-color, #ff0000);
         }
         
-        .block-content {
-          padding: 1rem;
-        }
-        
-        .block-title {
-          font-size: 1.5rem;
-          margin-bottom: 1.5rem;
-          text-align: center;
-        }
-        
         .empty-state {
           text-align: center;
           padding: 2rem;
           color: var(--tg-theme-hint-color, #999999);
         }
         
-        .questions-list {
+        .question-container {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          align-items: center;
+          width: 100%;
+          max-width: 500px;
         }
         
         .question-card {
-          padding: 1rem;
-          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          background-color: #f5f5f5;
+          border-radius: 12px;
+          padding: 2rem;
+          margin-bottom: 2rem;
+          width: 100%;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          text-align: center;
         }
         
         .question-text {
-          margin: 0 0 0.75rem 0;
-          font-size: 1rem;
+          margin: 0;
+          font-size: 1.25rem;
           line-height: 1.5;
+          font-weight: 500;
         }
         
-        .question-meta {
-          font-size: 0.75rem;
+        .answer-buttons {
+          display: flex;
+          flex-direction: column;
+          width: 100%;
+          gap: 1rem;
+        }
+        
+        .btn {
+          padding: 1rem;
+          border: none;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s, opacity 0.2s;
+        }
+        
+        .btn:active {
+          transform: scale(0.98);
+        }
+        
+        .btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        
+        .btn-want {
+          background-color: #e0e0e0;
+          color: #000000;
+          font-size: 1.2rem;
+        }
+        
+        .btn-dont-want {
+          background-color: #e0e0e0;
+          color: #000000;
+          font-size: 1.2rem;
+        }
+        
+        .btn-maybe {
+          background-color: transparent;
           color: var(--tg-theme-hint-color, #999999);
-        }
-        
-        .question-role {
-          display: inline-block;
-          padding: 0.25rem 0.5rem;
-          background-color: var(--tg-theme-bg-color, #ffffff);
-          border-radius: 4px;
+          font-size: 0.9rem;
+          font-weight: normal;
         }
       `}</style>
     </div>
