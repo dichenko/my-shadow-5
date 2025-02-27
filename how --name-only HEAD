@@ -1,0 +1,5 @@
+[33mcommit b05eb7fe6428ab1c9d6c6a9f639dd026a071c2cd[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Dinechko <m@dichenko.ru>
+Date:   Thu Feb 27 12:21:19 2025 +0300
+
+    Enhance active menu item visibility with size, background and animation

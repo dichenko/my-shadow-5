@@ -6,6 +6,7 @@ import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
+import UserPhoto from '../components/UserPhoto';
 
 export default function Questions() {
   const { user, loading: userLoading } = useUser();
@@ -81,6 +82,8 @@ export default function Questions() {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
       </Head>
+
+      <UserPhoto />
 
       <main className="main">
         <h1 className="app-title">MyShadow</h1>
