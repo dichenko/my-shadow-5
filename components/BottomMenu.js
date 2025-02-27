@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUser } from '../utils/context';
+import { fetchBlocksWithQuestions } from '../utils/api';
 
 export default function BottomMenu({ activePage = 'questions' }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useUser();
   const [active, setActive] = useState(activePage);
   const [prevActive, setPrevActive] = useState(null);
   const [animating, setAnimating] = useState(false);
@@ -36,9 +41,20 @@ export default function BottomMenu({ activePage = 'questions' }) {
     }
   }, [router.pathname]);
 
+  // Функция для предзагрузки данных при наведении на пункт меню
+  const prefetchData = (page) => {
+    if (page === 'questions' && user) {
+      // Предзагружаем блоки с вопросами
+      queryClient.prefetchQuery({
+        queryKey: ['blocks-with-questions', user?.id || user?.tgId],
+        queryFn: () => fetchBlocksWithQuestions(user?.id || user?.tgId),
+      });
+    }
+  };
+
   return (
     <div className="bottom-menu">
-      <Link href="/questions" className={`menu-item ${active === 'questions' ? 'active' : ''} ${prevActive === 'questions' && animating ? 'prev-active' : ''}`}>
+      <Link href="/" className={`menu-item ${active === 'home' ? 'active' : ''}`} onMouseEnter={() => prefetchData('home')}>
         <div className="icon-container">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8 12H16M8 8H16M8 16H12M4 4H20V20H4V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -47,7 +63,16 @@ export default function BottomMenu({ activePage = 'questions' }) {
         <span>Вопросы</span>
       </Link>
       
-      <Link href="/pair" className={`menu-item ${active === 'pair' ? 'active' : ''} ${prevActive === 'pair' && animating ? 'prev-active' : ''}`}>
+      <Link href="/questions" className={`menu-item ${active === 'questions' ? 'active' : ''}`} onMouseEnter={() => prefetchData('questions')}>
+        <div className="icon-container">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 12H16M8 8H16M8 16H12M4 4H20V20H4V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <span>Вопросы</span>
+      </Link>
+      
+      <Link href="/pair" className={`menu-item ${active === 'pair' ? 'active' : ''}`} onMouseEnter={() => prefetchData('pair')}>
         <div className="icon-container">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -56,7 +81,7 @@ export default function BottomMenu({ activePage = 'questions' }) {
         <span>Моя пара</span>
       </Link>
       
-      <Link href="/settings" className={`menu-item ${active === 'settings' ? 'active' : ''} ${prevActive === 'settings' && animating ? 'prev-active' : ''}`}>
+      <Link href="/settings" className={`menu-item ${active === 'settings' ? 'active' : ''}`} onMouseEnter={() => prefetchData('settings')}>
         <div className="icon-container">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

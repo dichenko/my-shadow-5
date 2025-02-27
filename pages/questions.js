@@ -6,14 +6,28 @@ import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
+import { useQuery } from '@tanstack/react-query';
+import { fetchBlocksWithQuestions } from '../utils/api';
 
 export default function Questions() {
   const { user, loading: userLoading } = useUser();
   const [telegramInitialized, setTelegramInitialized] = useState(false);
   const [error, setError] = useState(null);
-  const [blocks, setBlocks] = useState([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Используем React Query для загрузки блоков
+  const { 
+    data: blocks = [], 
+    isLoading: blocksLoading, 
+    error: blocksError 
+  } = useQuery({
+    queryKey: ['blocks-with-questions', user?.id || user?.tgId],
+    queryFn: () => fetchBlocksWithQuestions(user?.id || user?.tgId),
+    // Не запрашиваем данные, пока не получим пользователя
+    enabled: !!user,
+    // Данные блоков будут считаться свежими 10 минут
+    staleTime: 10 * 60 * 1000,
+  });
 
   useEffect(() => {
     async function initApp() {
@@ -45,40 +59,18 @@ export default function Questions() {
     initApp();
   }, [user]);
 
-  useEffect(() => {
-    async function fetchBlocks() {
-      try {
-        setLoading(true);
-        
-        // Добавляем userId в запрос, если пользователь получен
-        let url = '/api/blocks-with-questions';
-        if (user && user.id) {
-          url += `?userId=${user.id}`;
-        } else if (user && user.tgId) {
-          url += `?userId=${user.tgId}`;
-        }
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Не удалось загрузить блоки вопросов');
-        }
-        const data = await response.json();
-        setBlocks(data);
-      } catch (e) {
-        console.error('Ошибка при загрузке блоков:', e);
-        setError('Не удалось загрузить блоки вопросов');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchBlocks();
-  }, [user]);
-
   // Если данные из Telegram не получены в течение 5 секунд, показываем экран с предложением перейти в бот
   if (userLoading && !user) {
     return <LoadingScreen timeout={5000} />;
   }
+
+  // Обрабатываем ошибку загрузки блоков
+  useEffect(() => {
+    if (blocksError) {
+      setError('Не удалось загрузить блоки вопросов');
+      console.error('Ошибка при загрузке блоков:', blocksError);
+    }
+  }, [blocksError]);
 
   return (
     <div className="container">
@@ -96,14 +88,14 @@ export default function Questions() {
         
         {error ? (
           <div className="error">{error}</div>
-        ) : loading ? (
+        ) : blocksLoading ? (
           <div className="loading">Загрузка блоков...</div>
         ) : (
           <BlocksList blocks={blocks} />
         )}
       </main>
-
-      <BottomMenu activePage="questions" />
+      
+      <BottomMenu />
 
       <style jsx>{`
         .container {
