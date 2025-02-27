@@ -50,6 +50,12 @@ export default function Login() {
           console.log('Администратор авторизован, перенаправление в панель...');
           // Используем replace вместо push, чтобы избежать проблем с историей навигации
           router.replace('/admin');
+          
+          // Добавляем резервный метод перенаправления через window.location
+          setTimeout(() => {
+            console.log('Применяем резервный метод перенаправления...');
+            window.location.href = '/admin';
+          }, 500);
         } else {
           console.log('Администратор не авторизован, отображение формы входа');
           setDebugInfo({
@@ -119,7 +125,15 @@ export default function Login() {
       if (checkResult.ok && checkData.authenticated) {
         // Перенаправляем на админ-панель, используем replace вместо push
         console.log('Вход успешен, перенаправление в админ-панель');
+        
+        // Пробуем использовать router.replace
         router.replace('/admin');
+        
+        // Добавляем резервный метод перенаправления через window.location
+        setTimeout(() => {
+          console.log('Применяем резервный метод перенаправления...');
+          window.location.href = '/admin';
+        }, 500);
       } else {
         console.error('Странно: вход успешен, но проверка не прошла');
         setError('Произошла ошибка при авторизации. Возможно, cookie не сохранились.');
