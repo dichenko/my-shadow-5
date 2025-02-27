@@ -28,9 +28,17 @@ export default function Admin() {
   const [editingItem, setEditingItem] = useState(null);
   const [editData, setEditData] = useState({});
   
+  // Добавляем состояние для отслеживания процесса выхода
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
   // Загрузка данных при монтировании компонента
   useEffect(() => {
     let isMounted = true; // Флаг для предотвращения обновления состояния после размонтирования
+    
+    // Если выполняется выход, не загружаем данные
+    if (isLoggingOut) {
+      return;
+    }
     
     async function fetchData() {
       try {
@@ -45,18 +53,18 @@ export default function Admin() {
           return; // Прекращаем выполнение функции
         }
         
-        if (!isMounted) return; // Проверяем, что компонент все еще смонтирован
+        if (!isMounted || isLoggingOut) return; // Проверяем, что компонент все еще смонтирован и не выполняется выход
         
         // Загружаем данные только если авторизованы
         const [practicesRes, blocksRes, questionsRes, usersRes, answersRes] = await Promise.all([
-          fetch('/api/practices'),
-          fetch('/api/blocks'),
-          fetch('/api/questions'),
-          fetch('/api/users'),
-          fetch('/api/answers')
+          fetch('/api/practices', { credentials: 'include' }),
+          fetch('/api/blocks', { credentials: 'include' }),
+          fetch('/api/questions', { credentials: 'include' }),
+          fetch('/api/users', { credentials: 'include' }),
+          fetch('/api/answers', { credentials: 'include' })
         ]);
         
-        if (!isMounted) return; // Проверяем еще раз после асинхронных операций
+        if (!isMounted || isLoggingOut) return; // Проверяем еще раз после асинхронных операций
         
         // Обрабатываем ответы
         if (practicesRes.ok) {
@@ -101,12 +109,19 @@ export default function Admin() {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [router, isLoggingOut]);
   
   // Функция выхода из админ-панели
   const handleLogout = async () => {
     try {
       console.log('Выполняется выход из админ-панели...');
+      
+      // Устанавливаем флаг выхода
+      setIsLoggingOut(true);
+      
+      // Сначала очищаем состояние и останавливаем запросы
+      setLoading(true);
+      
       const res = await fetch('/api/admin/logout', { 
         method: 'POST',
         credentials: 'include' // Важно для работы с cookie
@@ -117,16 +132,27 @@ export default function Admin() {
         // Очищаем сохраненный токен из localStorage
         localStorage.removeItem('adminToken');
         
-        // Добавляем небольшую задержку перед перенаправлением
+        // Очищаем данные из состояния
+        setPractices([]);
+        setBlocks([]);
+        setQuestions([]);
+        setUsers([]);
+        setAnswers([]);
+        
+        // Увеличиваем задержку перед перенаправлением
         setTimeout(() => {
           // Используем window.location для надежного перенаправления
           window.location.href = '/admin/login';
-        }, 300);
+        }, 800);
       } else {
         console.error('Ошибка при выходе:', await res.json());
+        // Сбрасываем флаг выхода в случае ошибки
+        setIsLoggingOut(false);
       }
     } catch (error) {
       console.error('Ошибка при выходе:', error);
+      // Сбрасываем флаг выхода в случае ошибки
+      setIsLoggingOut(false);
     }
   };
   
