@@ -1,36 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
-export default function AdminLogin() {
+export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Проверяем, авторизован ли пользователь
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/admin/check');
+        if (res.ok) {
+          router.push('/admin');
+        }
+      } catch (error) {
+        console.error('Ошибка при проверке аутентификации:', error);
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
+    
+    if (!username || !password) {
+      setError('Пожалуйста, введите имя пользователя и пароль');
+      return;
+    }
+    
     try {
-      const response = await fetch('/api/admin/login', {
+      setLoading(true);
+      setError('');
+      
+      const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username, password }),
       });
-
-      if (response.ok) {
-        // Успешный вход, перенаправляем на админ-панель
-        router.push('/admin');
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Неверное имя пользователя или пароль');
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setError(data.message || 'Ошибка при входе');
+        return;
       }
+      
+      // Перенаправляем на админ-панель
+      router.push('/admin');
     } catch (error) {
+      console.error('Ошибка при входе:', error);
       setError('Произошла ошибка при входе');
-      console.error('Ошибка входа:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,39 +68,43 @@ export default function AdminLogin() {
         <title>Вход в админ-панель</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-
-      <div className="login-form">
+      
+      <div className="login-card">
         <h1>Вход в админ-панель</h1>
         
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error">{error}</div>}
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="username">Имя пользователя:</label>
+            <label htmlFor="username">Имя пользователя</label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
               required
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="password">Пароль:</label>
+            <label htmlFor="password">Пароль</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
               required
             />
           </div>
           
-          <button type="submit" className="login-button">Войти</button>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Вход...' : 'Войти'}
+          </button>
         </form>
       </div>
-
+      
       <style jsx>{`
         .login-container {
           display: flex;
@@ -82,8 +114,8 @@ export default function AdminLogin() {
           background-color: #f5f5f5;
         }
         
-        .login-form {
-          background: white;
+        .login-card {
+          background-color: white;
           padding: 2rem;
           border-radius: 8px;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -96,6 +128,20 @@ export default function AdminLogin() {
           margin-bottom: 1.5rem;
           text-align: center;
           color: #333;
+        }
+        
+        .error {
+          background-color: #f8d7da;
+          color: #721c24;
+          padding: 0.75rem;
+          margin-bottom: 1rem;
+          border-radius: 4px;
+          text-align: center;
+        }
+        
+        .login-form {
+          display: flex;
+          flex-direction: column;
         }
         
         .form-group {
@@ -116,29 +162,20 @@ export default function AdminLogin() {
           font-size: 1rem;
         }
         
-        .login-button {
-          width: 100%;
-          padding: 0.75rem;
-          background-color: #0070f3;
+        button {
+          background-color: #4CAF50;
           color: white;
           border: none;
+          padding: 0.75rem;
           border-radius: 4px;
           font-size: 1rem;
           cursor: pointer;
           margin-top: 1rem;
         }
         
-        .login-button:hover {
-          background-color: #0060df;
-        }
-        
-        .error-message {
-          color: #e53e3e;
-          margin-bottom: 1rem;
-          padding: 0.5rem;
-          background-color: #fff5f5;
-          border-radius: 4px;
-          text-align: center;
+        button:disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
         }
       `}</style>
     </div>

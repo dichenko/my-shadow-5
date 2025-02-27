@@ -1,12 +1,27 @@
 import { PrismaClient } from '@prisma/client';
-import { getSession } from 'next-auth/react';
+import { parse } from 'cookie';
 
 const prisma = new PrismaClient();
 
+// Простая проверка аутентификации на основе cookie
+async function checkAuth(req) {
+  try {
+    // Получаем cookie из запроса
+    const cookies = parse(req.headers.cookie || '');
+    const adminToken = cookies.adminToken;
+    
+    // Проверяем токен администратора
+    return adminToken === process.env.ADMIN_PASSWORD;
+  } catch (error) {
+    console.error('Ошибка при проверке аутентификации:', error);
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   // Проверка аутентификации
-  const session = await getSession({ req });
-  if (!session || !session.user.isAdmin) {
+  const isAuthenticated = await checkAuth(req);
+  if (!isAuthenticated) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
