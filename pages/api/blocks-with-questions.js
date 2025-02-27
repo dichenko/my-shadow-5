@@ -39,13 +39,7 @@ export default async function handler(req, res) {
       });
     }
     
-    // Для получения всех блоков с вопросами требуется аутентификация администратора
-    const isAuthenticated = await checkAdminAuth(req);
-    if (!isAuthenticated) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    
-    // Получаем все блоки
+    // Получаем все блоки (доступно без аутентификации)
     const blocks = await prisma.block.findMany({
       orderBy: [
         { order: 'asc' },

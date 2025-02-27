@@ -1,4 +1,5 @@
 import prisma from '../../lib/prisma'
+import { serialize } from 'cookie'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -19,9 +20,11 @@ export default async function handler(req, res) {
       }
     })
     
+    let user;
+    
     if (existingUser) {
       // Обновляем существующего пользователя
-      const updatedUser = await prisma.telegramUser.update({
+      user = await prisma.telegramUser.update({
         where: {
           id: existingUser.id
         },
@@ -30,11 +33,9 @@ export default async function handler(req, res) {
           visitCount: existingUser.visitCount + 1
         }
       })
-      
-      return res.status(200).json(updatedUser)
     } else {
       // Создаем нового пользователя
-      const newUser = await prisma.telegramUser.create({
+      user = await prisma.telegramUser.create({
         data: {
           tgId: userData.id,
           firstVisit: new Date(),
@@ -42,9 +43,20 @@ export default async function handler(req, res) {
           visitCount: 1
         }
       })
-      
-      return res.status(201).json(newUser)
     }
+    
+    // Устанавливаем cookie с ID пользователя
+    const cookie = serialize('userId', String(user.id), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      maxAge: 60 * 60 * 24 * 7, // 7 дней
+      sameSite: 'strict',
+      path: '/'
+    })
+    
+    res.setHeader('Set-Cookie', cookie)
+    
+    return res.status(existingUser ? 200 : 201).json(user)
   } catch (error) {
     console.error('Error saving user data:', error)
     return res.status(500).json({ error: 'Failed to save user data', details: error.message })
