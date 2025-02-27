@@ -109,7 +109,7 @@ export default function Questions() {
         
         .main {
           flex: 1;
-          padding-top: 1.5rem;
+          padding-top: 4rem;
         }
         
         .app-title {
