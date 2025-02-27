@@ -50,11 +50,32 @@ export async function checkAuth(req, res) {
 export async function checkAdminAuth(req) {
   try {
     // Получаем cookie из запроса
-    const cookies = parse(req.headers.cookie || '');
+    const cookieHeader = req.headers.cookie || '';
+    console.log('Проверка авторизации администратора. Заголовок Cookie:', cookieHeader);
+    
+    if (!cookieHeader) {
+      console.log('Cookie отсутствуют');
+      return false;
+    }
+    
+    const cookies = parse(cookieHeader);
+    console.log('Найденные cookies:', Object.keys(cookies));
+    
     const adminToken = cookies.adminToken;
     
+    if (!adminToken) {
+      console.log('Токен администратора отсутствует');
+      return false;
+    }
+    
+    console.log('Токен администратора найден, длина:', adminToken.length);
+    console.log('Ожидаемый пароль, длина:', process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.length : 0);
+    
     // Проверяем токен администратора
-    return adminToken === process.env.ADMIN_PASSWORD;
+    const isValid = adminToken === process.env.ADMIN_PASSWORD;
+    console.log('Результат проверки токена:', isValid);
+    
+    return isValid;
   } catch (error) {
     console.error('Ошибка при проверке аутентификации администратора:', error);
     return false;

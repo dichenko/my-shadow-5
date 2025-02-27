@@ -1,9 +1,17 @@
 import { serialize } from 'cookie';
+import { setCorsHeaders, handleCorsOptions } from '../../../utils/cors';
 
 export default async function handler(req, res) {
-  // Разрешаем только POST запросы
+  console.log('Получен запрос на выход администратора');
+
+  // Устанавливаем CORS заголовки и обрабатываем OPTIONS запросы
+  if (handleCorsOptions(req, res)) {
+    return;
+  }
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    console.log(`Метод ${req.method} не поддерживается`);
+    return res.status(405).json({ success: false, message: 'Метод не поддерживается' });
   }
 
   try {
@@ -22,9 +30,21 @@ export default async function handler(req, res) {
     res.setHeader('Set-Cookie', cookie);
     console.log('Cookie удален');
 
-    return res.status(200).json({ success: true, message: 'Успешный выход' });
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Успешный выход',
+      debug: {
+        cookieCleared: true,
+        time: new Date().toISOString(),
+        origin: req.headers.origin || 'не указан'
+      }
+    });
   } catch (error) {
     console.error('Ошибка при выходе:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Внутренняя ошибка сервера', 
+      error: error.message 
+    });
   }
 } 
