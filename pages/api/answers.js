@@ -1,130 +1,103 @@
 import prisma from '../../lib/prisma';
-import { parse } from 'cookie';
-
-// Простая проверка аутентификации на основе cookie
-async function checkAuth(req) {
-  try {
-    // Получаем cookie из запроса
-    const cookies = parse(req.headers.cookie || '');
-    const adminToken = cookies.adminToken;
-    
-    // Проверяем токен администратора
-    return adminToken === process.env.ADMIN_PASSWORD;
-  } catch (error) {
-    console.error('Ошибка при проверке аутентификации:', error);
-    return false;
-  }
-}
+import { checkAdminAuth } from '../../utils/auth';
 
 export default async function handler(req, res) {
   // Обработка POST запроса для создания ответа - доступно без аутентификации
   if (req.method === 'POST') {
     try {
       const { questionId, userId, text } = req.body;
-      
-      // Проверка наличия обязательных полей
+
+      // Проверяем наличие необходимых данных
       if (!questionId || !userId || !text) {
-        return res.status(400).json({ message: 'QuestionId, userId, and text are required' });
+        return res.status(400).json({ error: 'Необходимо указать questionId, userId и text' });
       }
-      
-      // Проверяем существование вопроса
+
+      // Проверяем, существует ли вопрос
       const question = await prisma.question.findUnique({
-        where: { id: parseInt(questionId) },
+        where: { id: parseInt(questionId) }
       });
-      
+
       if (!question) {
-        return res.status(404).json({ message: 'Question not found' });
+        return res.status(404).json({ error: 'Вопрос не найден' });
       }
-      
-      // Находим пользователя по Telegram ID
+
+      // Проверяем, существует ли пользователь
       const user = await prisma.telegramUser.findUnique({
-        where: { tgId: parseInt(userId) },
+        where: { id: parseInt(userId) }
       });
-      
+
       if (!user) {
-        // Если пользователь не найден, создаем нового
-        const newUser = await prisma.telegramUser.create({
-          data: {
-            tgId: parseInt(userId),
-            firstVisit: new Date(),
-            lastVisit: new Date(),
-            visitCount: 1
-          }
-        });
-        
-        // Создаем ответ с новым пользователем
-        const answer = await prisma.answer.create({
-          data: {
-            questionId: parseInt(questionId),
-            userId: newUser.id,
-            text,
-          },
-        });
-        
-        return res.status(201).json(answer);
+        return res.status(404).json({ error: 'Пользователь не найден' });
       }
-      
-      // Проверяем, не отвечал ли пользователь уже на этот вопрос
+
+      // Проверяем, существует ли уже ответ на этот вопрос от этого пользователя
       const existingAnswer = await prisma.answer.findFirst({
         where: {
           questionId: parseInt(questionId),
-          userId: user.id,
-        },
-      });
-      
-      if (existingAnswer) {
-        // Обновляем существующий ответ
-        const updatedAnswer = await prisma.answer.update({
-          where: { id: existingAnswer.id },
-          data: { text },
-        });
-        
-        return res.status(200).json(updatedAnswer);
-      }
-      
-      // Создаем новый ответ
-      const answer = await prisma.answer.create({
-        data: {
-          questionId: parseInt(questionId),
-          userId: user.id,
-          text,
-        },
-      });
-      
-      return res.status(201).json(answer);
-    } catch (error) {
-      console.error('Error creating answer:', error);
-      return res.status(500).json({ message: 'Failed to create answer' });
-    }
-  }
-  
-  // Для GET запроса требуется аутентификация
-  if (req.method === 'GET') {
-    // Проверка аутентификации
-    const isAuthenticated = await checkAuth(req);
-    if (!isAuthenticated) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-    
-    try {
-      const answers = await prisma.answer.findMany({
-        orderBy: {
-          id: 'desc',
-        },
-        take: 100, // Ограничиваем количество ответов для производительности
-        include: {
-          user: true,
-          question: true
+          userId: parseInt(userId)
         }
       });
-      
-      return res.status(200).json(answers);
+
+      let answer;
+
+      if (existingAnswer) {
+        // Обновляем существующий ответ
+        answer = await prisma.answer.update({
+          where: { id: existingAnswer.id },
+          data: { text }
+        });
+      } else {
+        // Создаем новый ответ
+        answer = await prisma.answer.create({
+          data: {
+            questionId: parseInt(questionId),
+            userId: parseInt(userId),
+            text
+          }
+        });
+      }
+
+      return res.status(200).json(answer);
     } catch (error) {
-      console.error('Error fetching answers:', error);
-      return res.status(500).json({ message: 'Failed to fetch answers' });
+      console.error('Ошибка при создании/обновлении ответа:', error);
+      return res.status(500).json({ error: 'Не удалось создать/обновить ответ' });
     }
   }
-  
+
+  // Обработка GET запроса для получения ответов - требуется аутентификация администратора
+  if (req.method === 'GET') {
+    try {
+      const isAuthenticated = await checkAdminAuth(req);
+
+      if (!isAuthenticated) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      // Получаем все ответы с информацией о вопросе и пользователе
+      const answers = await prisma.answer.findMany({
+        take: 100, // Ограничиваем количество результатов
+        orderBy: {
+          createdAt: 'desc' // Сортируем по дате создания (сначала новые)
+        },
+        include: {
+          question: {
+            include: {
+              block: true,
+              practice: true
+            }
+          },
+          user: true
+        }
+      });
+
+      return res.status(200).json(answers);
+    } catch (error) {
+      console.error('Ошибка при получении ответов:', error);
+      return res.status(500).json({ error: 'Не удалось получить ответы' });
+    }
+  }
+
   // Если метод не поддерживается
-  return res.status(405).json({ message: 'Method not allowed' });
+  res.setHeader('Allow', ['GET', 'POST']);
+  res.status(405).end(`Method ${req.method} Not Allowed`);
 } 

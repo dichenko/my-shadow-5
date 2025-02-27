@@ -1,4 +1,5 @@
 import prisma from '../../lib/prisma';
+import { checkAdminAuth } from '../../utils/auth';
 
 export default async function handler(req, res) {
   switch (req.method) {
@@ -9,7 +10,8 @@ export default async function handler(req, res) {
     case 'DELETE':
       return deletePractice(req, res);
     default:
-      return res.status(405).json({ message: 'Method not allowed' });
+      res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+      return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
 
@@ -25,17 +27,23 @@ async function getPractices(req, res) {
     return res.status(200).json(practices);
   } catch (error) {
     console.error('Ошибка при получении списка практик:', error);
-    return res.status(500).json({ error: 'Failed to fetch practices', details: error.message });
+    return res.status(500).json({ error: 'Не удалось получить список практик' });
   }
 }
 
 // Создание новой практики
 async function createPractice(req, res) {
   try {
+    // Проверяем аутентификацию администратора
+    const isAuthenticated = await checkAdminAuth(req);
+    if (!isAuthenticated) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
     const { name } = req.body;
     
     if (!name) {
-      return res.status(400).json({ error: 'Name is required' });
+      return res.status(400).json({ error: 'Необходимо указать name' });
     }
     
     const practice = await prisma.practice.create({
@@ -47,17 +55,23 @@ async function createPractice(req, res) {
     return res.status(201).json(practice);
   } catch (error) {
     console.error('Ошибка при создании практики:', error);
-    return res.status(500).json({ error: 'Failed to create practice', details: error.message });
+    return res.status(500).json({ error: 'Не удалось создать практику' });
   }
 }
 
 // Удаление практики
 async function deletePractice(req, res) {
   try {
+    // Проверяем аутентификацию администратора
+    const isAuthenticated = await checkAdminAuth(req);
+    if (!isAuthenticated) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
     const { id } = req.query;
     
     if (!id) {
-      return res.status(400).json({ error: 'Practice ID is required' });
+      return res.status(400).json({ error: 'Необходимо указать ID практики' });
     }
     
     const practiceId = parseInt(id);
@@ -69,8 +83,7 @@ async function deletePractice(req, res) {
     
     if (questionsCount > 0) {
       return res.status(400).json({ 
-        error: 'Cannot delete practice with associated questions',
-        message: 'Невозможно удалить практику, так как с ней связаны вопросы. Сначала удалите все вопросы этой практики.'
+        error: 'Невозможно удалить практику, так как с ней связаны вопросы. Сначала удалите все вопросы этой практики.'
       });
     }
     
@@ -85,9 +98,9 @@ async function deletePractice(req, res) {
     
     // Обработка ошибки, если практика не найдена
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Practice not found' });
+      return res.status(404).json({ error: 'Практика не найдена' });
     }
     
-    return res.status(500).json({ error: 'Failed to delete practice', details: error.message });
+    return res.status(500).json({ error: 'Не удалось удалить практику' });
   }
 } 

@@ -1,22 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import { parse } from 'cookie';
-
-const prisma = new PrismaClient();
-
-// Простая проверка аутентификации на основе cookie
-async function checkAuth(req) {
-  try {
-    // Получаем cookie из запроса
-    const cookies = parse(req.headers.cookie || '');
-    const adminToken = cookies.adminToken;
-    
-    // Проверяем токен администратора
-    return adminToken === process.env.ADMIN_PASSWORD;
-  } catch (error) {
-    console.error('Ошибка при проверке аутентификации:', error);
-    return false;
-  }
-}
+import prisma from '../../lib/prisma';
+import { checkAdminAuth } from '../../utils/auth';
 
 export default async function handler(req, res) {
   // Обработка GET запроса - доступно без аутентификации
@@ -33,19 +16,23 @@ export default async function handler(req, res) {
           { order: 'asc' },
           { id: 'asc' }
         ],
+        include: {
+          block: true,
+          practice: true
+        }
       });
       
       return res.status(200).json(questions);
     } catch (error) {
-      console.error('Error fetching questions:', error);
-      return res.status(500).json({ message: 'Failed to fetch questions' });
+      console.error('Ошибка при получении вопросов:', error);
+      return res.status(500).json({ error: 'Не удалось получить вопросы' });
     }
   }
   
   // Для всех остальных методов требуется аутентификация
-  const isAuthenticated = await checkAuth(req);
+  const isAuthenticated = await checkAdminAuth(req);
   if (!isAuthenticated) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   
   // Обработка POST запроса
@@ -54,7 +41,7 @@ export default async function handler(req, res) {
     
     // Проверка наличия обязательных полей
     if (!text || !blockId || !practiceId) {
-      return res.status(400).json({ message: 'Text, blockId, and practiceId are required' });
+      return res.status(400).json({ error: 'Необходимо указать text, blockId и practiceId' });
     }
     
     try {
@@ -64,7 +51,7 @@ export default async function handler(req, res) {
       });
       
       if (!block) {
-        return res.status(400).json({ message: 'Block not found' });
+        return res.status(400).json({ error: 'Блок не найден' });
       }
       
       const practice = await prisma.practice.findUnique({
@@ -72,7 +59,7 @@ export default async function handler(req, res) {
       });
       
       if (!practice) {
-        return res.status(400).json({ message: 'Practice not found' });
+        return res.status(400).json({ error: 'Практика не найдена' });
       }
       
       // Получаем максимальный порядок для вопросов в этом блоке
@@ -96,8 +83,8 @@ export default async function handler(req, res) {
       
       return res.status(201).json(question);
     } catch (error) {
-      console.error('Error creating question:', error);
-      return res.status(500).json({ message: 'Failed to create question' });
+      console.error('Ошибка при создании вопроса:', error);
+      return res.status(500).json({ error: 'Не удалось создать вопрос' });
     }
   }
   
@@ -107,7 +94,7 @@ export default async function handler(req, res) {
     
     // Проверка наличия обязательных полей
     if (!id || !text) {
-      return res.status(400).json({ message: 'ID and text are required' });
+      return res.status(400).json({ error: 'Необходимо указать id и text' });
     }
     
     try {
@@ -118,7 +105,7 @@ export default async function handler(req, res) {
         });
         
         if (!block) {
-          return res.status(400).json({ message: 'Block not found' });
+          return res.status(400).json({ error: 'Блок не найден' });
         }
       }
       
@@ -128,7 +115,7 @@ export default async function handler(req, res) {
         });
         
         if (!practice) {
-          return res.status(400).json({ message: 'Practice not found' });
+          return res.status(400).json({ error: 'Практика не найдена' });
         }
       }
       
@@ -146,8 +133,8 @@ export default async function handler(req, res) {
       
       return res.status(200).json(question);
     } catch (error) {
-      console.error('Error updating question:', error);
-      return res.status(500).json({ message: 'Failed to update question' });
+      console.error('Ошибка при обновлении вопроса:', error);
+      return res.status(500).json({ error: 'Не удалось обновить вопрос' });
     }
   }
   
@@ -156,7 +143,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
     
     if (!id) {
-      return res.status(400).json({ message: 'ID is required' });
+      return res.status(400).json({ error: 'Необходимо указать id' });
     }
     
     try {
@@ -167,7 +154,7 @@ export default async function handler(req, res) {
       
       if (answersCount > 0) {
         return res.status(400).json({ 
-          message: 'Cannot delete question with associated answers. Delete the answers first.' 
+          error: 'Невозможно удалить вопрос, так как на него есть ответы. Удалите сначала все ответы.' 
         });
       }
       
@@ -177,7 +164,7 @@ export default async function handler(req, res) {
       });
       
       if (!question) {
-        return res.status(404).json({ message: 'Question not found' });
+        return res.status(404).json({ error: 'Вопрос не найден' });
       }
       
       // Удаляем вопрос
@@ -198,13 +185,14 @@ export default async function handler(req, res) {
         });
       }
       
-      return res.status(200).json({ message: 'Question deleted successfully' });
+      return res.status(200).json({ success: true, message: 'Вопрос успешно удален' });
     } catch (error) {
-      console.error('Error deleting question:', error);
-      return res.status(500).json({ message: 'Failed to delete question' });
+      console.error('Ошибка при удалении вопроса:', error);
+      return res.status(500).json({ error: 'Не удалось удалить вопрос' });
     }
   }
   
   // Если метод не поддерживается
-  return res.status(405).json({ message: 'Method not allowed' });
+  res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+  res.status(405).end(`Method ${req.method} Not Allowed`);
 } 

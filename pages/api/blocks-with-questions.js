@@ -1,25 +1,11 @@
 import prisma from '../../lib/prisma';
-import { parse } from 'cookie';
-
-// Простая проверка аутентификации на основе cookie
-async function checkAuth(req) {
-  try {
-    // Получаем cookie из запроса
-    const cookies = parse(req.headers.cookie || '');
-    const adminToken = cookies.adminToken;
-    
-    // Проверяем токен администратора
-    return adminToken === process.env.ADMIN_PASSWORD;
-  } catch (error) {
-    console.error('Ошибка при проверке аутентификации:', error);
-    return false;
-  }
-}
+import { checkAdminAuth } from '../../utils/auth';
 
 export default async function handler(req, res) {
   // Обрабатываем только GET запросы
   if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    res.setHeader('Allow', ['GET']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
   try {
@@ -28,11 +14,11 @@ export default async function handler(req, res) {
     // Если указан id, возвращаем конкретный блок с вопросами (доступно без аутентификации)
     if (id) {
       const block = await prisma.block.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id) }
       });
       
       if (!block) {
-        return res.status(404).json({ message: 'Block not found' });
+        return res.status(404).json({ error: 'Блок не найден' });
       }
       
       // Получаем вопросы для этого блока
@@ -42,38 +28,56 @@ export default async function handler(req, res) {
           { order: 'asc' },
           { id: 'asc' }
         ],
+        include: {
+          practice: true
+        }
       });
       
       return res.status(200).json({
         ...block,
-        questions,
+        questions
       });
     }
     
-    // Получаем все блоки (доступно без аутентификации)
+    // Для получения всех блоков с вопросами требуется аутентификация администратора
+    const isAuthenticated = await checkAdminAuth(req);
+    if (!isAuthenticated) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    // Получаем все блоки
     const blocks = await prisma.block.findMany({
       orderBy: [
         { order: 'asc' },
         { id: 'asc' }
-      ],
+      ]
     });
 
-    // Для каждого блока считаем количество вопросов
-    const blocksWithQuestionCount = await Promise.all(
+    // Для каждого блока получаем вопросы и считаем их количество
+    const blocksWithQuestions = await Promise.all(
       blocks.map(async (block) => {
-        const questionsCount = await prisma.question.count({
+        const questions = await prisma.question.findMany({
           where: { blockId: block.id },
+          orderBy: [
+            { order: 'asc' },
+            { id: 'asc' }
+          ],
+          include: {
+            practice: true
+          }
         });
+        
         return {
           ...block,
-          questionsCount, // Используем questionsCount вместо questionCount для совместимости
+          questions,
+          questionsCount: questions.length
         };
       })
     );
 
-    return res.status(200).json(blocksWithQuestionCount);
+    return res.status(200).json(blocksWithQuestions);
   } catch (error) {
-    console.error('Error fetching blocks with questions:', error);
-    return res.status(500).json({ message: 'Failed to fetch blocks with questions' });
+    console.error('Ошибка при получении блоков с вопросами:', error);
+    return res.status(500).json({ error: 'Не удалось получить блоки с вопросами' });
   }
 } 
