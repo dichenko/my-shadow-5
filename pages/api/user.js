@@ -12,10 +12,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid user data' })
     }
     
-    // Проверяем, существует ли пользователь
+    // Проверяем, существует ли пользователь с таким Telegram ID
     const existingUser = await prisma.telegramUser.findUnique({
       where: {
-        id: userData.id
+        tgId: userData.id
       }
     })
     
@@ -23,11 +23,9 @@ export default async function handler(req, res) {
       // Обновляем существующего пользователя
       const updatedUser = await prisma.telegramUser.update({
         where: {
-          id: userData.id
+          id: existingUser.id
         },
         data: {
-          username: userData.username,
-          languageCode: userData.language_code,
           lastVisit: new Date(),
           visitCount: existingUser.visitCount + 1
         }
@@ -38,9 +36,7 @@ export default async function handler(req, res) {
       // Создаем нового пользователя
       const newUser = await prisma.telegramUser.create({
         data: {
-          id: userData.id,
-          username: userData.username,
-          languageCode: userData.language_code,
+          tgId: userData.id,
           firstVisit: new Date(),
           lastVisit: new Date(),
           visitCount: 1

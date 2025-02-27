@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import { parse } from 'cookie';
-
-const prisma = new PrismaClient();
 
 // Простая проверка аутентификации на основе cookie
 async function checkAuth(req) {
@@ -29,7 +27,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'QuestionId, userId, and text are required' });
       }
       
-      // Проверяем существование вопроса и пользователя
+      // Проверяем существование вопроса
       const question = await prisma.question.findUnique({
         where: { id: parseInt(questionId) },
       });
@@ -38,19 +36,39 @@ export default async function handler(req, res) {
         return res.status(404).json({ message: 'Question not found' });
       }
       
+      // Находим пользователя по Telegram ID
       const user = await prisma.telegramUser.findUnique({
-        where: { id: parseInt(userId) },
+        where: { tgId: parseInt(userId) },
       });
       
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        // Если пользователь не найден, создаем нового
+        const newUser = await prisma.telegramUser.create({
+          data: {
+            tgId: parseInt(userId),
+            firstVisit: new Date(),
+            lastVisit: new Date(),
+            visitCount: 1
+          }
+        });
+        
+        // Создаем ответ с новым пользователем
+        const answer = await prisma.answer.create({
+          data: {
+            questionId: parseInt(questionId),
+            userId: newUser.id,
+            text,
+          },
+        });
+        
+        return res.status(201).json(answer);
       }
       
       // Проверяем, не отвечал ли пользователь уже на этот вопрос
       const existingAnswer = await prisma.answer.findFirst({
         where: {
           questionId: parseInt(questionId),
-          userId: parseInt(userId),
+          userId: user.id,
         },
       });
       
@@ -68,7 +86,7 @@ export default async function handler(req, res) {
       const answer = await prisma.answer.create({
         data: {
           questionId: parseInt(questionId),
-          userId: parseInt(userId),
+          userId: user.id,
           text,
         },
       });
@@ -94,6 +112,10 @@ export default async function handler(req, res) {
           id: 'desc',
         },
         take: 100, // Ограничиваем количество ответов для производительности
+        include: {
+          user: true,
+          question: true
+        }
       });
       
       return res.status(200).json(answers);

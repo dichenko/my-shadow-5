@@ -9,9 +9,8 @@ datasource db {
 }
 
 model TelegramUser {
-  id            Int      @id
-  username      String?
-  languageCode  String?
+  id            Int      @id @default(autoincrement())
+  tgId          Int      @unique
   firstVisit    DateTime @default(now())
   lastVisit     DateTime @default(now())
   visitCount    Int      @default(1)

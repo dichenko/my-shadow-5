@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import { parse } from 'cookie';
-
-const prisma = new PrismaClient();
 
 // Простая проверка аутентификации на основе cookie
 async function checkAuth(req) {

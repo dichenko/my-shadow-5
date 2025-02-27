@@ -1,8 +1,11 @@
+-- Удаляем старые таблицы
+DROP TABLE IF EXISTS "Answer";
+DROP TABLE IF EXISTS "TelegramUser";
+
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "TelegramUser" (
-    "id" INTEGER NOT NULL,
-    "username" TEXT,
-    "languageCode" TEXT,
+    "id" SERIAL NOT NULL,
+    "tgId" INTEGER NOT NULL,
     "firstVisit" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastVisit" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "visitCount" INTEGER NOT NULL DEFAULT 1,
@@ -45,6 +48,9 @@ CREATE TABLE IF NOT EXISTS "Answer" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Answer_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TelegramUser_tgId_key" ON "TelegramUser"("tgId");
 
 -- AddForeignKey
 ALTER TABLE "Question" ADD CONSTRAINT "Question_blockId_fkey" FOREIGN KEY ("blockId") REFERENCES "Block"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
