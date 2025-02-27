@@ -3,6 +3,7 @@ import { UserProvider } from '../utils/context';
 import TelegramScript from '../components/TelegramScript';
 import SwipeHandler from '../components/SwipeHandler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // Создаем клиент запросов с настройками кэширования
 const queryClient = new QueryClient({
@@ -20,14 +21,16 @@ const queryClient = new QueryClient({
 
 function MyApp({ Component, pageProps }) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <TelegramScript />
-        <SwipeHandler>
-          <Component {...pageProps} />
-        </SwipeHandler>
-      </UserProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <UserProvider>
+          <TelegramScript />
+          <SwipeHandler>
+            <Component {...pageProps} />
+          </SwipeHandler>
+        </UserProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
