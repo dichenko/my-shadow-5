@@ -1,8 +1,50 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import BottomMenu from '../components/BottomMenu';
+import { useUser } from '../utils/context';
 
 export default function Settings() {
+  const { user } = useUser();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Функция для очистки всех ответов пользователя
+  const clearAllAnswers = async () => {
+    if (!user) {
+      setError('Пользователь не авторизован');
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      setError(null);
+      setMessage(null);
+
+      // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
+      const userId = user.id || user.tgId;
+
+      const response = await fetch(`/api/delete-user-answers?userId=${userId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось удалить ответы');
+      }
+
+      setMessage(data.message || 'Все ваши ответы успешно удалены');
+      setShowConfirmation(false);
+    } catch (err) {
+      console.error('Ошибка при удалении ответов:', err);
+      setError(err.message || 'Не удалось удалить ответы. Пожалуйста, попробуйте еще раз.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="container">
       <Head>
@@ -12,9 +54,50 @@ export default function Settings() {
       </Head>
 
       <main className="main">
-        <div className="coming-soon">
-          <h1>Настройки</h1>
-          <p>Эта функция будет доступна в ближайшее время</p>
+        <div className="settings-container">
+          <h1 className="settings-title">Настройки</h1>
+          
+          {message && (
+            <div className="message success">{message}</div>
+          )}
+          
+          {error && (
+            <div className="message error">{error}</div>
+          )}
+          
+          <div className="settings-section">
+            <h2 className="section-title">Управление данными</h2>
+            
+            {!showConfirmation ? (
+              <button 
+                className="clear-answers-btn"
+                onClick={() => setShowConfirmation(true)}
+                disabled={isDeleting || !user}
+              >
+                Очистить все ответы
+              </button>
+            ) : (
+              <div className="confirmation-box">
+                <p className="confirmation-text">Вы уверены, что хотите удалить все свои ответы? Это действие нельзя отменить.</p>
+                <div className="confirmation-buttons">
+                  <button 
+                    className="confirm-btn"
+                    onClick={clearAllAnswers}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Удаление...' : 'Да, удалить все'}
+                  </button>
+                  <button 
+                    className="cancel-btn"
+                    onClick={() => setShowConfirmation(false)}
+                    disabled={isDeleting}
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
@@ -33,24 +116,113 @@ export default function Settings() {
         
         .main {
           flex: 1;
-          padding-top: 4rem;
-          display: flex;
-          justify-content: center;
-          align-items: center;
+          padding-top: 2rem;
+          padding-bottom: 5rem;
         }
         
-        .coming-soon {
-          text-align: center;
-          padding: 2rem;
+        .settings-container {
+          padding: 1rem;
+          max-width: 600px;
+          margin: 0 auto;
         }
         
-        .coming-soon h1 {
+        .settings-title {
           font-size: 1.8rem;
-          margin-bottom: 1rem;
+          margin-bottom: 2rem;
+          text-align: center;
         }
         
-        .coming-soon p {
-          color: var(--tg-theme-hint-color, #999999);
+        .settings-section {
+          margin-bottom: 2rem;
+          padding: 1.5rem;
+          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+          border-radius: 12px;
+        }
+        
+        .section-title {
+          font-size: 1.2rem;
+          margin-top: 0;
+          margin-bottom: 1.5rem;
+        }
+        
+        .clear-answers-btn {
+          width: 100%;
+          padding: 0.8rem;
+          background-color: var(--tg-theme-destructive-text-color, #ff3b30);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        
+        .clear-answers-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        
+        .confirmation-box {
+          background-color: rgba(255, 59, 48, 0.1);
+          padding: 1rem;
+          border-radius: 8px;
+          border: 1px solid var(--tg-theme-destructive-text-color, #ff3b30);
+        }
+        
+        .confirmation-text {
+          margin-top: 0;
+          margin-bottom: 1rem;
+          color: var(--tg-theme-destructive-text-color, #ff3b30);
+          font-weight: 500;
+        }
+        
+        .confirmation-buttons {
+          display: flex;
+          gap: 0.5rem;
+        }
+        
+        .confirm-btn, .cancel-btn {
+          flex: 1;
+          padding: 0.8rem;
+          border: none;
+          border-radius: 8px;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        
+        .confirm-btn {
+          background-color: var(--tg-theme-destructive-text-color, #ff3b30);
+          color: white;
+        }
+        
+        .cancel-btn {
+          background-color: var(--tg-theme-button-color, #2481cc);
+          color: white;
+        }
+        
+        .confirm-btn:disabled, .cancel-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        
+        .message {
+          padding: 1rem;
+          border-radius: 8px;
+          margin-bottom: 1.5rem;
+          text-align: center;
+        }
+        
+        .success {
+          background-color: rgba(52, 199, 89, 0.1);
+          border: 1px solid rgba(52, 199, 89, 0.5);
+          color: #34c759;
+        }
+        
+        .error {
+          background-color: rgba(255, 59, 48, 0.1);
+          border: 1px solid rgba(255, 59, 48, 0.5);
+          color: var(--tg-theme-destructive-text-color, #ff3b30);
         }
       `}</style>
     </div>
