@@ -649,7 +649,7 @@ export default function Admin() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Вопрос</th>
+                  <th>Вопрос ID</th>
                   <th>Пользователь ID</th>
                   <th>Telegram ID</th>
                   <th>Текст</th>
@@ -659,11 +659,10 @@ export default function Admin() {
               <tbody>
                 {answers.map((answer) => {
                   const user = users.find(u => u.id === answer.userId);
-                  const question = questions.find(q => q.id === answer.questionId);
                   return (
                     <tr key={answer.id}>
                       <td>{answer.id}</td>
-                      <td>{question ? question.text.substring(0, 30) + '...' : 'Неизвестно'}</td>
+                      <td>{answer.questionId}</td>
                       <td>{answer.userId}</td>
                       <td>{user ? user.tgId : 'Неизвестно'}</td>
                       <td className="text-cell">
