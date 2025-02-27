@@ -6,7 +6,7 @@ import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
-import UserPhoto from '../components/UserPhoto';
+import QuestionCard from '../components/QuestionCard';
 
 export default function Questions() {
   const { user, loading: userLoading } = useUser();
@@ -77,13 +77,11 @@ export default function Questions() {
       <Head>
         <title>Вопросы | MyShadowApp</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
-        <meta name="description" content="Блоки вопросов MyShadowApp" />
+        <meta name="description" content="Вопросы MyShadowApp" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
       </Head>
-
-      <UserPhoto />
 
       <main className="main">
         <h1 className="app-title">MyShadow</h1>

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getTelegramUser, getUserPhotoUrl } from './telegram';
+import { getTelegramUser } from './telegram';
 
 // Создаем контекст для пользователя
 const UserContext = createContext();
@@ -8,7 +8,6 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [serverUser, setServerUser] = useState(null);
-  const [photoUrl, setPhotoUrl] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,12 +50,6 @@ export function UserProvider({ children }) {
             // Добавляем дополнительную информацию для отладки
             _source: 'telegram'
           });
-          
-          // Получаем URL фотографии пользователя
-          const userPhotoUrl = await getUserPhotoUrl(telegramUser.id);
-          if (userPhotoUrl) {
-            setPhotoUrl(userPhotoUrl);
-          }
         } else {
           console.error('Не удалось получить данные пользователя из Telegram WebApp');
         }
@@ -78,7 +71,7 @@ export function UserProvider({ children }) {
   } : user;
 
   return (
-    <UserContext.Provider value={{ user: combinedUser, photoUrl, loading, serverUser }}>
+    <UserContext.Provider value={{ user: combinedUser, loading, serverUser }}>
       {children}
     </UserContext.Provider>
   );

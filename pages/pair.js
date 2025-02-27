@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
-import UserPhoto from '../components/UserPhoto';
 import BottomMenu from '../components/BottomMenu';
 import { useUser } from '../utils/context';
 
@@ -182,8 +181,6 @@ export default function Pair() {
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
         <meta name="description" content="Моя пара в MyShadowApp" />
       </Head>
-
-      <UserPhoto />
 
       <main className="main">
         <div className="pair-container">

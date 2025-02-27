@@ -1,137 +1,29 @@
 // Утилиты для работы с Telegram WebApp API
 
-export const getTelegramUser = () => {
+// Функция для получения данных пользователя из Telegram WebApp
+export function getTelegramUser() {
   if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
-    try {
-      const webApp = window.Telegram.WebApp;
-      const user = webApp.initDataUnsafe?.user || null;
-      
-      if (user) {
-        console.log('Получены данные пользователя из Telegram WebApp:', user);
-        
-        // Проверяем наличие необходимых полей
-        if (!user.id) {
-          console.error('ID пользователя отсутствует в данных Telegram WebApp');
-        }
-        
-        // Сохраняем данные в localStorage на случай, если понадобятся при перезагрузке
-        try {
-          localStorage.setItem('telegramUser', JSON.stringify(user));
-        } catch (storageError) {
-          console.error('Не удалось сохранить данные пользователя в localStorage:', storageError);
-        }
-        
-        return user;
-      } else {
-        console.warn('Пользователь не найден в данных Telegram WebApp');
-        
-        // Пытаемся восстановить из localStorage, если данные там есть
-        try {
-          const savedUser = localStorage.getItem('telegramUser');
-          if (savedUser) {
-            const parsedUser = JSON.parse(savedUser);
-            console.log('Восстановлены данные пользователя из localStorage:', parsedUser);
-            return parsedUser;
-          }
-        } catch (parseError) {
-          console.error('Ошибка при восстановлении данных пользователя из localStorage:', parseError);
-        }
-      }
-    } catch (error) {
-      console.error('Ошибка при получении данных пользователя из Telegram WebApp:', error);
-    }
-  } else {
-    console.log('Telegram WebApp не обнаружен или пользователь не авторизован');
+    const webApp = window.Telegram.WebApp;
     
-    // Пытаемся восстановить из localStorage в любом случае
-    try {
-      const savedUser = localStorage.getItem('telegramUser');
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        console.log('Восстановлены данные пользователя из localStorage (WebApp не обнаружен):', parsedUser);
-        return parsedUser;
-      }
-    } catch (parseError) {
-      console.error('Ошибка при восстановлении данных пользователя из localStorage:', parseError);
+    if (webApp.initDataUnsafe && webApp.initDataUnsafe.user) {
+      return webApp.initDataUnsafe.user;
     }
+  }
+  
+  // Для отладки в браузере вне Telegram
+  if (process.env.NODE_ENV === 'development') {
+    return {
+      id: 12345678,
+      first_name: 'Test',
+      last_name: 'User',
+      username: 'testuser',
+      language_code: 'ru',
+      _debug: true
+    };
   }
   
   return null;
-};
-
-// Кеш для хранения URL фотографий пользователей
-const photoCache = new Map();
-
-// Функция для получения URL фотографии пользователя с кешированием
-export const getUserPhotoUrl = async (userId) => {
-  if (!userId) return null;
-  
-  // Проверяем, есть ли фото в памяти
-  if (photoCache.has(userId)) {
-    console.log('Получена фотография из кеша памяти');
-    return photoCache.get(userId);
-  }
-  
-  // Проверяем, есть ли фото в localStorage
-  if (typeof window !== 'undefined') {
-    const cachedPhoto = localStorage.getItem(`userPhoto_${userId}`);
-    if (cachedPhoto) {
-      console.log('Получена фотография из localStorage');
-      // Сохраняем в памяти для быстрого доступа
-      photoCache.set(userId, cachedPhoto);
-      return cachedPhoto;
-    }
-  }
-  
-  try {
-    // Сначала пробуем получить фотографию через наш API-эндпоинт
-    const response = await fetch(`/api/user-photo?userId=${userId}`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      const photoUrl = data.photoUrl;
-      
-      // Сохраняем в кеш
-      photoCache.set(userId, photoUrl);
-      
-      // Сохраняем в localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`userPhoto_${userId}`, photoUrl);
-      }
-      
-      return photoUrl;
-    } 
-    
-    // Если не удалось получить через API, используем прямой URL к Telegram Avatar
-    console.log('Используем прямой URL к Telegram Avatar');
-    const fallbackUrl = `https://avatars.telegram.org/${userId}`;
-    
-    // Сохраняем в кеш
-    photoCache.set(userId, fallbackUrl);
-    
-    // Сохраняем в localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`userPhoto_${userId}`, fallbackUrl);
-    }
-    
-    return fallbackUrl;
-  } catch (error) {
-    console.error('Ошибка при получении фотографии пользователя:', error);
-    
-    // В случае ошибки тоже используем прямой URL
-    const fallbackUrl = `https://avatars.telegram.org/${userId}`;
-    
-    // Сохраняем в кеш
-    photoCache.set(userId, fallbackUrl);
-    
-    // Сохраняем в localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`userPhoto_${userId}`, fallbackUrl);
-    }
-    
-    return fallbackUrl;
-  }
-};
+}
 
 export const initTelegramApp = () => {
   if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {

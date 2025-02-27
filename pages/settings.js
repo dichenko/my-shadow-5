@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
-import UserPhoto from '../components/UserPhoto';
 import BottomMenu from '../components/BottomMenu';
 
 export default function Settings() {
@@ -11,8 +10,6 @@ export default function Settings() {
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
         <meta name="description" content="Настройки MyShadowApp" />
       </Head>
-
-      <UserPhoto />
 
       <main className="main">
         <div className="coming-soon">
