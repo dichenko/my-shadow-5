@@ -28,8 +28,10 @@ export default function LoadingScreen({ timeout = 5000 }) {
         <div className="redirect-content">
           <h2>Не удалось получить данные из Telegram</h2>
           <p>Пожалуйста, перейдите в наш телеграм-бот для корректной работы приложения.</p>
-          <Link href="https://t.me/MyShadowApp_bot" className="telegram-button">
-            Перейти в @MyShadowApp_bot
+          <Link href="https://t.me/MyShadowApp_bot" legacyBehavior>
+            <a className="telegram-button">
+              Перейти в @MyShadowApp_bot
+            </a>
           </Link>
         </div>
       )}
