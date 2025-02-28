@@ -3,11 +3,13 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useUser } from '../../utils/context';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function BlockQuestions() {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useUser();
+  const queryClient = useQueryClient();
   
   const [block, setBlock] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -107,6 +109,9 @@ export default function BlockQuestions() {
       }
       
       console.log('Ответ успешно сохранен:', data);
+      
+      // Инвалидируем кэш для обновления счетчика ответов
+      await queryClient.invalidateQueries(['blocks-with-questions']);
       
       // Переходим к следующему вопросу или возвращаемся на страницу блоков
       if (currentQuestionIndex < questions.length - 1) {
