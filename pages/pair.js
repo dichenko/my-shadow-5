@@ -305,7 +305,7 @@ export default function Pair() {
                       </button>
                     ) : (
                       <div className="confirm-delete">
-                        <p>Вы уверены?</p>
+                        <p>Вы уверены? Совпадающие желания исчезнут у вас и у партнера. Ваш партнер получит сообщение, что вы прервали связь.</p>
                         <div className="confirm-buttons">
                           <button 
                             className="confirm-yes" 
@@ -586,6 +586,14 @@ export default function Pair() {
           flex-direction: column;
           align-items: center;
           gap: 0.5rem;
+        }
+        
+        .confirm-delete p {
+          text-align: center;
+          color: #e53935;
+          font-size: 0.9rem;
+          max-width: 90%;
+          margin-bottom: 0.5rem;
         }
         
         .confirm-buttons {
