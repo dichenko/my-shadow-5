@@ -287,7 +287,7 @@ export default function Pair() {
                                 </div>
                               ) : (
                                 <div className="role-match">
-                                  <div className="match-practice">{match.practiceName}</div>
+                                  <div className="match-question">{match.userQuestionText}</div>
                                   <div className="match-roles">
                                     {match.userRole === 'giver' ? (
                                       <>
