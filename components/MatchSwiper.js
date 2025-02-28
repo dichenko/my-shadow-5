@@ -192,20 +192,32 @@ export default function MatchSwiper({ matches = [], onClose }) {
           <div className="match-info">
             {currentMatch.type === 'regular' ? (
               <div className="match-regular-info">
-                <span className="user-answer">Вы: {getAnswerText(currentMatch.userAnswer)}</span>
-                <span className="partner-answer">Партнер: {getAnswerText(currentMatch.partnerAnswer)}</span>
+                {currentMatch.userAnswer === 'yes' && currentMatch.partnerAnswer === 'yes' ? (
+                  <div className="match-special-message">
+                    <span>Вы оба этого хотите! Не стоит откладывать ❤️</span>
+                  </div>
+                ) : currentMatch.userAnswer === 'maybe' && currentMatch.partnerAnswer === 'maybe' ? (
+                  <div className="match-special-message">
+                    <span>Вы оба сомневаетесь. Обсудите это вместе!</span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="user-answer">{getAnswerText(currentMatch.userAnswer)}</span>
+                    <span className="partner-answer">{getAnswerText(currentMatch.partnerAnswer)}</span>
+                  </>
+                )}
               </div>
             ) : (
               <div className="match-role-info">
                 {currentMatch.userRole === 'giver' ? (
                   <>
-                    <span className="user-role">Вы хотите дать: {getAnswerText(currentMatch.userAnswer)}</span>
-                    <span className="partner-role">Партнер хочет получить: {getAnswerText(currentMatch.partnerAnswer)}</span>
+                    <span className="user-role">Хотите дать: {getAnswerText(currentMatch.userAnswer)}</span>
+                    <span className="partner-role">Хочет получить: {getAnswerText(currentMatch.partnerAnswer)}</span>
                   </>
                 ) : (
                   <>
-                    <span className="user-role">Вы хотите получить: {getAnswerText(currentMatch.userAnswer)}</span>
-                    <span className="partner-role">Партнер хочет дать: {getAnswerText(currentMatch.partnerAnswer)}</span>
+                    <span className="user-role">Хотите получить: {getAnswerText(currentMatch.userAnswer)}</span>
+                    <span className="partner-role">Хочет дать: {getAnswerText(currentMatch.partnerAnswer)}</span>
                   </>
                 )}
               </div>
@@ -300,6 +312,14 @@ export default function MatchSwiper({ matches = [], onClose }) {
           flex-direction: column;
           gap: 0.5rem;
           font-size: 0.9rem;
+        }
+        
+        .match-special-message {
+          text-align: center;
+          font-size: 1.1rem;
+          color: #FF4D8D;
+          font-weight: 500;
+          padding: 0.5rem 0;
         }
         
         .user-answer, .user-role {
