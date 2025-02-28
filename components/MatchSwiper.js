@@ -36,15 +36,16 @@ export default function MatchSwiper({ matches = [], onClose }) {
     
     if (!isLeftSwipe && !isRightSwipe) return;
     
-    if (isLeftSwipe && currentIndex < matches.length - 1) {
-      // Свайп влево - следующий вопрос
+    if (isLeftSwipe) {
+      // Свайп влево - следующий вопрос (с циклическим переходом)
       setIsAnimating(true);
       if (cardRef.current) {
         cardRef.current.classList.add('swiping-left');
       }
       
       setTimeout(() => {
-        setCurrentIndex(currentIndex + 1);
+        // Если текущий индекс последний, переходим к первому, иначе к следующему
+        setCurrentIndex(currentIndex === matches.length - 1 ? 0 : currentIndex + 1);
         setTimeout(() => {
           if (cardRef.current) {
             cardRef.current.classList.remove('swiping-left');
@@ -52,15 +53,16 @@ export default function MatchSwiper({ matches = [], onClose }) {
           setIsAnimating(false);
         }, 300);
       }, 100);
-    } else if (isRightSwipe && currentIndex > 0) {
-      // Свайп вправо - предыдущий вопрос
+    } else if (isRightSwipe) {
+      // Свайп вправо - предыдущий вопрос (с циклическим переходом)
       setIsAnimating(true);
       if (cardRef.current) {
         cardRef.current.classList.add('swiping-right');
       }
       
       setTimeout(() => {
-        setCurrentIndex(currentIndex - 1);
+        // Если текущий индекс первый, переходим к последнему, иначе к предыдущему
+        setCurrentIndex(currentIndex === 0 ? matches.length - 1 : currentIndex - 1);
         setTimeout(() => {
           if (cardRef.current) {
             cardRef.current.classList.remove('swiping-right');
