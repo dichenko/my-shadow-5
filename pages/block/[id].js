@@ -65,9 +65,13 @@ export default function BlockQuestions() {
 
   // Функция для отправки ответа
   const handleSubmitAnswer = async (answer) => {
-    if (!user || !questions.length || submitting) return;
+    if (!user || !questions.length || submitting || !currentQuestion) return;
     
     const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion) {
+      setError('Вопрос не найден');
+      return;
+    }
     
     try {
       setSubmitting(true);
@@ -168,14 +172,14 @@ export default function BlockQuestions() {
         ) : (
           <div className="question-container">
             <div className="question-card">
-              <p className="question-text">{currentQuestion.text}</p>
+              <p className="question-text">{currentQuestion?.text || 'Вопрос не найден'}</p>
             </div>
             
             <div className="answer-buttons">
               <button 
                 className="btn btn-want"
                 onClick={() => handleSubmitAnswer('yes')}
-                disabled={submitting}
+                disabled={submitting || !currentQuestion}
               >
                 ХОЧУ
               </button>
@@ -183,7 +187,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-dont-want"
                 onClick={() => handleSubmitAnswer('no')}
-                disabled={submitting}
+                disabled={submitting || !currentQuestion}
               >
                 НЕ ХОЧУ
               </button>
@@ -191,7 +195,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-maybe"
                 onClick={() => handleSubmitAnswer('maybe')}
-                disabled={submitting}
+                disabled={submitting || !currentQuestion}
               >
                 сомневаюсь
               </button>
