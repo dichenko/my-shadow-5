@@ -29,6 +29,14 @@ export default function Questions() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Обрабатываем ошибку загрузки блоков
+  useEffect(() => {
+    if (blocksError) {
+      setError('Не удалось загрузить блоки вопросов');
+      console.error('Ошибка при загрузке блоков:', blocksError);
+    }
+  }, [blocksError]);
+
   useEffect(() => {
     async function initApp() {
       try {
@@ -63,14 +71,6 @@ export default function Questions() {
   if (userLoading && !user) {
     return <LoadingScreen timeout={5000} />;
   }
-
-  // Обрабатываем ошибку загрузки блоков
-  useEffect(() => {
-    if (blocksError) {
-      setError('Не удалось загрузить блоки вопросов');
-      console.error('Ошибка при загрузке блоков:', blocksError);
-    }
-  }, [blocksError]);
 
   return (
     <div className="container">
