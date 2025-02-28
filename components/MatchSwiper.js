@@ -2,76 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 
 export default function MatchSwiper({ matches = [], onClose }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const cardRef = useRef(null);
-  
-  // Минимальное расстояние свайпа для срабатывания (в пикселях)
-  const minSwipeDistance = 50;
-  
-  // Обработчики событий касания
-  const onTouchStart = (e) => {
-    // Предотвращаем всплытие события, чтобы не активировать навигацию между страницами
-    e.stopPropagation();
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-  
-  const onTouchMove = (e) => {
-    // Предотвращаем всплытие события
-    e.stopPropagation();
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-  
-  const onTouchEnd = (e) => {
-    // Предотвращаем всплытие события
-    e.stopPropagation();
-    
-    if (!touchStart || !touchEnd || isAnimating) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    
-    if (!isLeftSwipe && !isRightSwipe) return;
-    
-    if (isLeftSwipe) {
-      // Свайп влево - следующий вопрос (с циклическим переходом)
-      setIsAnimating(true);
-      if (cardRef.current) {
-        cardRef.current.classList.add('swiping-left');
-      }
-      
-      setTimeout(() => {
-        // Если текущий индекс последний, переходим к первому, иначе к следующему
-        setCurrentIndex(currentIndex === matches.length - 1 ? 0 : currentIndex + 1);
-        setTimeout(() => {
-          if (cardRef.current) {
-            cardRef.current.classList.remove('swiping-left');
-          }
-          setIsAnimating(false);
-        }, 300);
-      }, 100);
-    } else if (isRightSwipe) {
-      // Свайп вправо - предыдущий вопрос (с циклическим переходом)
-      setIsAnimating(true);
-      if (cardRef.current) {
-        cardRef.current.classList.add('swiping-right');
-      }
-      
-      setTimeout(() => {
-        // Если текущий индекс первый, переходим к последнему, иначе к предыдущему
-        setCurrentIndex(currentIndex === 0 ? matches.length - 1 : currentIndex - 1);
-        setTimeout(() => {
-          if (cardRef.current) {
-            cardRef.current.classList.remove('swiping-right');
-          }
-          setIsAnimating(false);
-        }, 300);
-      }, 100);
-    }
-  };
   
   // Функция для отображения текста ответа
   const getAnswerText = (answer) => {
@@ -87,7 +19,7 @@ export default function MatchSwiper({ matches = [], onClose }) {
     }
   };
   
-  // Добавляем глобальные стили для анимации свайпа
+  // Добавляем глобальные стили для анимации перехода между карточками
   useEffect(() => {
     // Создаем элемент стиля
     const styleElement = document.createElement('style');
@@ -129,23 +61,6 @@ export default function MatchSwiper({ matches = [], onClose }) {
     // Удаляем стили при размонтировании компонента
     return () => {
       document.head.removeChild(styleElement);
-    };
-  }, []);
-  
-  // Предотвращаем прокрутку страницы при свайпе внутри компонента
-  useEffect(() => {
-    const preventDefaultTouchMove = (e) => {
-      if (e.target.closest('.match-swiper-container')) {
-        e.preventDefault();
-      }
-    };
-    
-    // Добавляем обработчик события touchmove на документ
-    document.addEventListener('touchmove', preventDefaultTouchMove, { passive: false });
-    
-    // Удаляем обработчик при размонтировании компонента
-    return () => {
-      document.removeEventListener('touchmove', preventDefaultTouchMove);
     };
   }, []);
   
@@ -199,12 +114,7 @@ export default function MatchSwiper({ matches = [], onClose }) {
   const currentMatch = matches[currentIndex];
   
   return (
-    <div 
-      className="match-swiper-container"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
+    <div className="match-swiper-container">
       <div className="content-wrapper">
         {/* Индикаторы прогресса (Page Controls) */}
         <div 
@@ -221,7 +131,29 @@ export default function MatchSwiper({ matches = [], onClose }) {
           {Array.from({ length: matches.length }).map((_, index) => (
             <div
               key={index}
-              onClick={() => !isAnimating && setCurrentIndex(index)}
+              onClick={() => {
+                if (isAnimating) return;
+                
+                // Добавляем анимацию при переключении индикаторов
+                setIsAnimating(true);
+                if (cardRef.current) {
+                  if (index > currentIndex) {
+                    cardRef.current.classList.add('swiping-left');
+                  } else if (index < currentIndex) {
+                    cardRef.current.classList.add('swiping-right');
+                  }
+                }
+                
+                setTimeout(() => {
+                  setCurrentIndex(index);
+                  setTimeout(() => {
+                    if (cardRef.current) {
+                      cardRef.current.classList.remove('swiping-left', 'swiping-right');
+                    }
+                    setIsAnimating(false);
+                  }, 300);
+                }, 100);
+              }}
               style={{
                 height: '4px',
                 flex: 1,
