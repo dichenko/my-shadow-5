@@ -375,22 +375,6 @@ export default function BlockQuestions() {
         <meta name="description" content="Вопросы блока в MyShadowApp" />
       </Head>
 
-      <div className="back-button">
-        <Link href="/questions" legacyBehavior>
-          <a className="back-button-content">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </a>
-        </Link>
-      </div>
-
-      {questions.length > 0 && !showCompletionMessage && (
-        <div className="question-counter">
-          {currentQuestionIndex + 1}/{questions.length}
-        </div>
-      )}
-
       <main className="main">
         {isLoading ? (
           <div className="loading">Загрузка вопросов...</div>
@@ -479,6 +463,20 @@ export default function BlockQuestions() {
           <div className="error">Вопрос не найден. Пожалуйста, вернитесь к списку блоков.</div>
         ) : (
           <div className="question-container">
+            {/* Индикаторы прогресса */}
+            <div className="progress-indicators">
+              {Array.from({ length: questions.length }).map((_, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    if (fadeOut) return;
+                    setCurrentQuestionIndex(index);
+                  }}
+                  className={`progress-indicator ${index === currentQuestionIndex ? 'active' : ''} ${index < currentQuestionIndex ? 'completed' : ''}`}
+                />
+              ))}
+            </div>
+            
             <div 
               ref={questionCardRef}
               className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'} ${swiping ? 'swiping' : ''}`}
@@ -544,29 +542,37 @@ export default function BlockQuestions() {
           padding: 1rem;
         }
         
-        .back-button {
-          position: absolute;
-          top: 1rem;
-          left: 1rem;
-          z-index: 10;
-        }
-        
-        .back-button a {
+        .progress-indicators {
           display: flex;
-          align-items: center;
-          color: var(--tg-theme-button-color, #2481cc);
-          text-decoration: none;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 0 10px;
+          margin-bottom: 24px;
+          margin-top: 20px;
         }
         
-        .question-counter {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          font-size: 1rem;
-          color: var(--tg-theme-hint-color, #999999);
-          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
+        .progress-indicator {
+          height: 4px;
+          flex: 1;
+          max-width: 40px;
+          background-color: #E0E0E0;
+          border-radius: 2px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          opacity: 0.5;
+        }
+        
+        .progress-indicator.active {
+          background: linear-gradient(90deg, #FF6B6B, #FF4D8D);
+          opacity: 1;
+          transform: scaleY(1.2);
+          box-shadow: 0 1px 3px rgba(255, 77, 141, 0.3);
+        }
+        
+        .progress-indicator.completed {
+          background: linear-gradient(90deg, #8A2BE2, #9C27B0);
+          opacity: 0.8;
         }
         
         .loading {
