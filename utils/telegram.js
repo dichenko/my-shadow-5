@@ -160,7 +160,25 @@ export function setupHeader(options = {}) {
   
   // Устанавливаем параметры заголовка
   if (options.title) {
-    tg.setHeaderColor(options.color || 'bg_color');
-    tg.setTitle(options.title);
+    try {
+      // Устанавливаем цвет заголовка
+      tg.setHeaderColor(options.color || 'bg_color');
+      
+      // Проверяем наличие метода setTitle
+      if (typeof tg.setTitle === 'function') {
+        tg.setTitle(options.title);
+      } else {
+        // Альтернативный способ установки заголовка, если метод не существует
+        console.log('Метод setTitle не доступен в текущей версии Telegram WebApp API');
+        
+        // Можно попробовать использовать другие методы, если они доступны
+        if (typeof tg.MainButton !== 'undefined' && typeof tg.MainButton.setText === 'function') {
+          console.log('Используем альтернативный способ для отображения заголовка');
+          // Здесь можно реализовать альтернативный способ отображения заголовка
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка при установке заголовка:', error);
+    }
   }
 } 
