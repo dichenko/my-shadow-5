@@ -20,7 +20,10 @@ export default function BlockQuestions() {
   const [submitting, setSubmitting] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [hearts, setHearts] = useState([]);
+  const [allQuestionsAnswered, setAllQuestionsAnswered] = useState(false);
+  const [totalQuestions, setTotalQuestions] = useState(0);
   const questionCardRef = useRef(null);
 
   // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
@@ -63,6 +66,14 @@ export default function BlockQuestions() {
         // Устанавливаем заголовок после получения данных о блоке
         setupHeader({ title: blockData.name });
         
+        // Получаем все вопросы блока для подсчета общего количества
+        const allQuestionsResponse = await fetch(`/api/questions?blockId=${id}&includeAll=true`);
+        if (!allQuestionsResponse.ok) {
+          throw new Error('Не удалось загрузить все вопросы блока');
+        }
+        const allQuestionsData = await allQuestionsResponse.json();
+        setTotalQuestions(allQuestionsData.length);
+        
         // Получаем вопросы блока, исключая те, на которые пользователь уже ответил
         let url = `/api/questions?blockId=${id}`;
         if (user && user.id) {
@@ -79,8 +90,9 @@ export default function BlockQuestions() {
         setQuestions(questionsData);
         
         // Если нет вопросов, на которые пользователь еще не ответил, показываем сообщение
-        if (questionsData.length === 0) {
-          setError('Вы уже ответили на все вопросы в этом блоке');
+        if (questionsData.length === 0 && allQuestionsData.length > 0) {
+          setAllQuestionsAnswered(true);
+          createHearts(); // Создаем анимацию сердечек
         }
       } catch (err) {
         console.error('Ошибка при загрузке данных блока:', err);
@@ -248,11 +260,55 @@ export default function BlockQuestions() {
     }
   };
 
+  // Функция для сброса ответов пользователя на вопросы блока
+  const resetBlockAnswers = async () => {
+    if (!user || !id) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
+      const userId = user.dbId || user.id;
+      
+      // Отправляем запрос на удаление ответов
+      const response = await fetch(`/api/delete-block-answers?userId=${userId}&blockId=${id}`, {
+        method: 'DELETE',
+      });
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Ошибка при парсинге ответа:', parseError);
+        throw new Error('Ошибка при получении ответа от сервера');
+      }
+      
+      if (!response.ok) {
+        console.error('Ошибка при удалении ответов. Статус:', response.status, 'Ответ:', data);
+        throw new Error(data.error || 'Не удалось удалить ответы');
+      }
+      
+      console.log('Ответы успешно удалены:', data);
+      
+      // Инвалидируем кэш для обновления счетчика ответов
+      queryClient.invalidateQueries(['blocks-with-questions']);
+      
+      // Перезагружаем страницу для получения новых вопросов
+      router.reload();
+      
+    } catch (err) {
+      console.error('Ошибка при удалении ответов:', err);
+      setError(err.message || 'Не удалось удалить ответы. Пожалуйста, попробуйте еще раз.');
+      setLoading(false);
+    }
+  };
+
   // Показываем загрузку, если данные еще не получены
   const isLoading = loading;
   
   // Если нет вопросов, на которые пользователь еще не ответил
-  const noQuestionsLeft = !isLoading && questions.length === 0;
+  const noQuestionsLeft = !isLoading && questions.length === 0 && !allQuestionsAnswered;
   
   // Проверяем, что индекс текущего вопроса находится в пределах массива
   const isValidIndex = currentQuestionIndex >= 0 && currentQuestionIndex < questions.length;
@@ -299,6 +355,61 @@ export default function BlockQuestions() {
         ) : noQuestionsLeft ? (
           <div className="empty-state">
             <p>В этом блоке пока нет вопросов</p>
+          </div>
+        ) : allQuestionsAnswered ? (
+          <div className="completion-container">
+            <div className="completion-card">
+              <h2>Поздравляем!</h2>
+              <p>Вы ответили на все вопросы в этом блоке</p>
+              <p className="completion-stats">Всего вопросов: {totalQuestions}</p>
+              
+              {!showConfirmReset ? (
+                <div className="completion-actions">
+                  <Link href="/questions" legacyBehavior>
+                    <a className="btn btn-return">Вернуться</a>
+                  </Link>
+                  <button 
+                    className="btn-reset"
+                    onClick={() => setShowConfirmReset(true)}
+                  >
+                    Ответить заново
+                  </button>
+                </div>
+              ) : (
+                <div className="confirm-reset">
+                  <p>Все ваши ответы в этом блоке будут удалены. Вы уверены?</p>
+                  <div className="confirm-buttons">
+                    <button 
+                      className="btn btn-confirm-yes"
+                      onClick={resetBlockAnswers}
+                      disabled={loading}
+                    >
+                      Да, удалить
+                    </button>
+                    <button 
+                      className="btn btn-confirm-no"
+                      onClick={() => setShowConfirmReset(false)}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {hearts.map(heart => (
+                <div 
+                  key={heart.id}
+                  className="heart"
+                  style={{
+                    left: `${heart.left}%`,
+                    width: `${heart.size}px`,
+                    height: `${heart.size}px`,
+                    backgroundColor: heart.color,
+                    animationDuration: `${heart.animationDuration}s`
+                  }}
+                />
+              ))}
+            </div>
           </div>
         ) : showCompletionMessage ? (
           <div className="completion-container">
@@ -535,7 +646,79 @@ export default function BlockQuestions() {
         
         .completion-card p {
           font-size: 1.1rem;
-          margin-bottom: 0;
+          margin-bottom: 1rem;
+        }
+        
+        .completion-stats {
+          font-size: 0.9rem;
+          color: var(--tg-theme-hint-color, #999999);
+          margin-bottom: 1.5rem;
+        }
+        
+        .completion-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          margin-top: 1rem;
+        }
+        
+        .btn-return {
+          background-color: var(--tg-theme-button-color, #2481cc);
+          color: var(--tg-theme-button-text-color, #ffffff);
+          padding: 0.75rem;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 600;
+          display: block;
+          text-align: center;
+        }
+        
+        .btn-reset {
+          background: none;
+          border: none;
+          color: var(--tg-theme-hint-color, #999999);
+          font-size: 0.9rem;
+          padding: 0.5rem;
+          cursor: pointer;
+          text-decoration: underline;
+          margin-top: 0.5rem;
+        }
+        
+        .confirm-reset {
+          margin-top: 1rem;
+        }
+        
+        .confirm-reset p {
+          font-size: 0.95rem;
+          color: var(--tg-theme-hint-color, #999999);
+          margin-bottom: 1rem;
+        }
+        
+        .confirm-buttons {
+          display: flex;
+          gap: 0.75rem;
+        }
+        
+        .btn-confirm-yes {
+          flex: 1;
+          background-color: var(--tg-theme-destructive-text-color, #ff0000);
+          color: white;
+          padding: 0.75rem;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        
+        .btn-confirm-no {
+          flex: 1;
+          background-color: var(--tg-theme-secondary-bg-color, #e0e0e0);
+          color: var(--tg-theme-text-color, #000000);
+          padding: 0.75rem;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
         }
         
         .heart {

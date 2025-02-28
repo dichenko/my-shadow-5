@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   // Обработка GET запроса - доступно без аутентификации
   if (req.method === 'GET') {
     try {
-      const { blockId, userId } = req.query;
+      const { blockId, userId, includeAll } = req.query;
       
       // Если не указан blockId, возвращаем все вопросы
       if (!blockId) {
@@ -26,9 +26,9 @@ export default async function handler(req, res) {
       // Если указан blockId, фильтруем вопросы по блоку
       let where = { blockId: parseInt(blockId) };
       
-      // Если указан userId, исключаем вопросы, на которые пользователь уже ответил
-      if (userId) {
-        // Находим пользователя по id или tgId
+      // Если указан userId и не указан includeAll, исключаем вопросы, на которые пользователь уже ответил
+      if (userId && includeAll !== 'true') {
+        // Находим пользователя
         let user = await prisma.telegramUser.findUnique({
           where: { id: parseInt(userId) }
         });
@@ -41,31 +41,25 @@ export default async function handler(req, res) {
         }
         
         if (user) {
-          // Получаем ответы пользователя на вопросы этого блока
-          const answers = await prisma.answer.findMany({
+          // Получаем ID вопросов, на которые пользователь уже ответил
+          const answeredQuestions = await prisma.answer.findMany({
             where: {
-              userId: user.id,
-              question: {
-                blockId: parseInt(blockId)
-              }
+              userId: user.id
             },
             select: {
               questionId: true
             }
           });
           
-          // Получаем ID вопросов, на которые пользователь уже ответил
-          const answeredQuestionIds = answers.map(answer => answer.questionId);
+          const answeredQuestionIds = answeredQuestions.map(a => a.questionId);
           
-          // Исключаем отвеченные вопросы из выборки
-          if (answeredQuestionIds.length > 0) {
-            where = {
-              ...where,
-              id: {
-                notIn: answeredQuestionIds
-              }
-            };
-          }
+          // Исключаем вопросы, на которые пользователь уже ответил
+          where = {
+            ...where,
+            id: {
+              notIn: answeredQuestionIds
+            }
+          };
         }
       }
       
