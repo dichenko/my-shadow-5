@@ -26,6 +26,11 @@ export default function BlockQuestions() {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const questionCardRef = useRef(null);
 
+  // Добавляем состояния для обработки свайпа
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [swiping, setSwiping] = useState(false);
+
   // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
   useEffect(() => {
     // Показываем кнопку "Назад" и устанавливаем обработчик
@@ -304,6 +309,45 @@ export default function BlockQuestions() {
     }
   };
 
+  // Добавляем функцию для обработки свайпа
+  const handleSwipe = () => {
+    if (!touchStart || !touchEnd || submitting || fadeOut) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50; // Минимальное расстояние свайпа
+    
+    if (isLeftSwipe) {
+      // Пропускаем текущий вопрос и переходим к следующему
+      setFadeOut(true);
+      setSwiping(true);
+      
+      setTimeout(() => {
+        // Если это последний вопрос, возвращаемся к первому
+        if (currentQuestionIndex >= questions.length - 1) {
+          setCurrentQuestionIndex(0);
+        } else {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        }
+        setFadeOut(false);
+        setSwiping(false);
+      }, 150);
+    }
+  };
+
+  // Обработчики событий касания
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    handleSwipe();
+  };
+
   // Показываем загрузку, если данные еще не получены
   const isLoading = loading;
   
@@ -437,7 +481,10 @@ export default function BlockQuestions() {
           <div className="question-container">
             <div 
               ref={questionCardRef}
-              className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'}`}
+              className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'} ${swiping ? 'swiping' : ''}`}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
             >
               <p className="question-text">{currentQuestion.text}</p>
             </div>
@@ -466,6 +513,13 @@ export default function BlockQuestions() {
               >
                 сомневаюсь
               </button>
+            </div>
+
+            <div className="swipe-hint">
+              <p>Свайпните влево, чтобы пропустить вопрос</p>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 5L21 12M21 12L14 19M21 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
           </div>
         )}
@@ -770,6 +824,40 @@ export default function BlockQuestions() {
           to {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+        
+        /* Добавляем стили для анимации свайпа */
+        .question-card.swiping {
+          transform: translateX(-30px);
+          opacity: 0.7;
+          transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+        }
+        
+        /* Добавляем подсказку о свайпе */
+        .swipe-hint {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-top: 1rem;
+          color: var(--tg-theme-hint-color, #999999);
+          font-size: 0.9rem;
+          opacity: 0.8;
+        }
+        
+        .swipe-hint svg {
+          width: 16px;
+          height: 16px;
+          animation: slideLeft 1.5s infinite;
+        }
+        
+        @keyframes slideLeft {
+          0%, 100% {
+            transform: translateX(0);
+          }
+          50% {
+            transform: translateX(5px);
           }
         }
       `}</style>
