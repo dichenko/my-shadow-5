@@ -194,6 +194,14 @@ export default function MatchSwiper({ matches = [], onClose }) {
   
   const currentMatch = matches[currentIndex];
   
+  // Создаем массив индикаторов
+  const indicators = Array.from({ length: matches.length }, (_, index) => (
+    <div 
+      key={index} 
+      className={`progress-indicator ${index === currentIndex ? 'active' : ''}`}
+    />
+  ));
+  
   return (
     <div 
       className="match-swiper-container"
@@ -207,6 +215,10 @@ export default function MatchSwiper({ matches = [], onClose }) {
           <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
+      
+      <div className="progress-indicators-container">
+        {indicators}
+      </div>
       
       <div className="match-counter">
         {currentIndex + 1} / {matches.length}
@@ -267,6 +279,31 @@ export default function MatchSwiper({ matches = [], onClose }) {
           align-items: center;
           justify-content: center;
           padding: 1rem;
+        }
+        
+        .progress-indicators-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          display: flex;
+          justify-content: center;
+          gap: 4px;
+          padding: 12px;
+          z-index: 1002;
+        }
+        
+        .progress-indicator {
+          height: 4px;
+          flex: 1;
+          max-width: 40px;
+          background-color: rgba(0, 0, 0, 0.1);
+          border-radius: 2px;
+          transition: background-color 0.3s ease;
+        }
+        
+        .progress-indicator.active {
+          background-color: var(--tg-theme-button-color, #2481cc);
         }
         
         .close-button {
