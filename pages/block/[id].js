@@ -30,6 +30,7 @@ export default function BlockQuestions() {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const [swiping, setSwiping] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState(null); // Добавляем состояние для направления свайпа
 
   // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
   useEffect(() => {
@@ -316,43 +317,62 @@ export default function BlockQuestions() {
     }
   };
 
-  // Добавляем функцию для обработки свайпа
-  const handleSwipe = () => {
-    if (!touchStart || !touchEnd || submitting || fadeOut) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50; // Минимальное расстояние свайпа
-    
-    if (isLeftSwipe) {
-      // Пропускаем текущий вопрос и переходим к следующему
-      setFadeOut(true);
-      setSwiping(true);
-      
-      setTimeout(() => {
-        // Если это последний вопрос, возвращаемся к первому
-        if (currentQuestionIndex >= questions.length - 1) {
-          setCurrentQuestionIndex(0);
-        } else {
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-        }
-        setFadeOut(false);
-        setSwiping(false);
-      }, 150);
-    }
-  };
-
-  // Обработчики событий касания
+  // Обработчики событий касания для свайпа
   const onTouchStart = (e) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
+    setSwipeDirection(null);
   };
-
+  
   const onTouchMove = (e) => {
     setTouchEnd(e.targetTouches[0].clientX);
+    
+    if (!touchStart || !questionCardRef.current) return;
+    
+    const distance = touchStart - e.targetTouches[0].clientX;
+    const isLeftSwipe = distance > 30;
+    const isRightSwipe = distance < -30;
+    
+    if (isLeftSwipe) {
+      setSwiping(true);
+      setSwipeDirection('left');
+      questionCardRef.current.classList.add('swiping');
+      questionCardRef.current.classList.remove('swiping-right');
+    } else if (isRightSwipe) {
+      setSwiping(true);
+      setSwipeDirection('right');
+      questionCardRef.current.classList.add('swiping-right');
+      questionCardRef.current.classList.remove('swiping');
+    } else {
+      setSwiping(false);
+      setSwipeDirection(null);
+      questionCardRef.current.classList.remove('swiping', 'swiping-right');
+    }
   };
-
+  
   const onTouchEnd = () => {
-    handleSwipe();
+    if (!touchStart || !touchEnd || submitting || fadeOut) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    
+    if (isLeftSwipe && questions.length > 0) {
+      // Циклический переход: если текущий вопрос последний, переходим к первому
+      const nextIndex = currentQuestionIndex < questions.length - 1 ? currentQuestionIndex + 1 : 0;
+      setCurrentQuestionIndex(nextIndex);
+    } else if (isRightSwipe && questions.length > 0) {
+      // Циклический переход: если текущий вопрос первый, переходим к последнему
+      const prevIndex = currentQuestionIndex > 0 ? currentQuestionIndex - 1 : questions.length - 1;
+      setCurrentQuestionIndex(prevIndex);
+    }
+    
+    setSwiping(false);
+    setSwipeDirection(null);
+    
+    if (questionCardRef.current) {
+      questionCardRef.current.classList.remove('swiping', 'swiping-right');
+    }
   };
 
   // Показываем загрузку, если данные еще не получены
@@ -913,6 +933,13 @@ export default function BlockQuestions() {
           50% {
             transform: translateX(5px);
           }
+        }
+
+        /* Добавляем стили для свайпа вправо */
+        .question-card.swiping-right {
+          transform: translateX(30px);
+          opacity: 0.7;
+          transition: transform 0.15s ease-out, opacity 0.15s ease-out;
         }
       `}</style>
     </div>

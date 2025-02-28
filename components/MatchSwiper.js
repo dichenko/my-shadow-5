@@ -68,7 +68,7 @@ export default function MatchSwiper({ matches = [], onClose }) {
     };
   }, []);
   
-  // Добавляем функцию для обработки свайпа
+  // Добавляем функцию для обработки свайпа с циклическим переходом
   const handleSwipe = () => {
     if (!touchStart || !touchEnd || isAnimating) return;
     
@@ -76,12 +76,16 @@ export default function MatchSwiper({ matches = [], onClose }) {
     const isLeftSwipe = distance > 50; // Минимальное расстояние свайпа влево
     const isRightSwipe = distance < -50; // Минимальное расстояние свайпа вправо
     
-    if (isLeftSwipe && currentIndex < matches.length - 1) {
+    if (isLeftSwipe) {
       // Свайп влево - переход к следующей карточке
-      navigateToIndex(currentIndex + 1);
-    } else if (isRightSwipe && currentIndex > 0) {
+      // Если текущая карточка последняя, переходим к первой (циклический переход)
+      const nextIndex = currentIndex < matches.length - 1 ? currentIndex + 1 : 0;
+      navigateToIndex(nextIndex);
+    } else if (isRightSwipe) {
       // Свайп вправо - переход к предыдущей карточке
-      navigateToIndex(currentIndex - 1);
+      // Если текущая карточка первая, переходим к последней (циклический переход)
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : matches.length - 1;
+      navigateToIndex(prevIndex);
     }
   };
   
@@ -91,9 +95,14 @@ export default function MatchSwiper({ matches = [], onClose }) {
     
     setIsAnimating(true);
     if (cardRef.current) {
-      if (index > currentIndex) {
+      // Определяем направление анимации
+      // Учитываем циклический переход (с последней на первую и с первой на последнюю)
+      if (
+        (index > currentIndex && !(currentIndex === 0 && index === matches.length - 1)) || 
+        (currentIndex === matches.length - 1 && index === 0)
+      ) {
         cardRef.current.classList.add('swiping-left');
-      } else if (index < currentIndex) {
+      } else {
         cardRef.current.classList.add('swiping-right');
       }
     }
