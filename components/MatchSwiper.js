@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function MatchSwiper({ matches = [], onClose }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const cardRef = useRef(null);
   
   // Минимальное расстояние свайпа для срабатывания (в пикселях)
   const minSwipeDistance = 50;
@@ -31,24 +32,32 @@ export default function MatchSwiper({ matches = [], onClose }) {
     if (isLeftSwipe && currentIndex < matches.length - 1) {
       // Свайп влево - следующий вопрос
       setIsAnimating(true);
-      document.querySelector('.match-card').classList.add('swiping-left');
+      if (cardRef.current) {
+        cardRef.current.classList.add('swiping-left');
+      }
       
       setTimeout(() => {
         setCurrentIndex(currentIndex + 1);
         setTimeout(() => {
-          document.querySelector('.match-card').classList.remove('swiping-left');
+          if (cardRef.current) {
+            cardRef.current.classList.remove('swiping-left');
+          }
           setIsAnimating(false);
         }, 300);
       }, 100);
     } else if (isRightSwipe && currentIndex > 0) {
       // Свайп вправо - предыдущий вопрос
       setIsAnimating(true);
-      document.querySelector('.match-card').classList.add('swiping-right');
+      if (cardRef.current) {
+        cardRef.current.classList.add('swiping-right');
+      }
       
       setTimeout(() => {
         setCurrentIndex(currentIndex - 1);
         setTimeout(() => {
-          document.querySelector('.match-card').classList.remove('swiping-right');
+          if (cardRef.current) {
+            cardRef.current.classList.remove('swiping-right');
+          }
           setIsAnimating(false);
         }, 300);
       }, 100);
@@ -179,7 +188,7 @@ export default function MatchSwiper({ matches = [], onClose }) {
         {currentIndex + 1} / {matches.length}
       </div>
       
-      <div className="match-card">
+      <div className="match-card" ref={cardRef}>
         <div className="match-question">
           {currentMatch.type === 'regular' ? (
             currentMatch.questionText
