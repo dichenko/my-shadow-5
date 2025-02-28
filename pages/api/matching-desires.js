@@ -67,10 +67,10 @@ export default async function handler(req, res) {
         const partnerAnswer = partnerAnswersMap[userAnswer.questionId];
         if (!partnerAnswer) return false;
         
-        // Совпадение, если оба ответили "да" или "не уверен"
+        // Совпадение, если оба ответили "да" ИЛИ оба ответили "не уверен"
         return (
-          (userAnswer.text === 'yes' || userAnswer.text === 'maybe') && 
-          (partnerAnswer.text === 'yes' || partnerAnswer.text === 'maybe')
+          (userAnswer.text === 'yes' && partnerAnswer.text === 'yes') || 
+          (userAnswer.text === 'maybe' && partnerAnswer.text === 'maybe')
         );
       }).map(match => ({
         type: 'regular',
@@ -138,8 +138,8 @@ export default async function handler(req, res) {
         if (
           practice.user.giver && 
           practice.partner.taker && 
-          (practice.user.giver.answer === 'yes' || practice.user.giver.answer === 'maybe') && 
-          (practice.partner.taker.answer === 'yes' || practice.partner.taker.answer === 'maybe')
+          ((practice.user.giver.answer === 'yes' && practice.partner.taker.answer === 'yes') || 
+           (practice.user.giver.answer === 'maybe' && practice.partner.taker.answer === 'maybe'))
         ) {
           matchingDesires.push({
             type: 'role',
@@ -162,8 +162,8 @@ export default async function handler(req, res) {
         if (
           practice.user.taker && 
           practice.partner.giver && 
-          (practice.user.taker.answer === 'yes' || practice.user.taker.answer === 'maybe') && 
-          (practice.partner.giver.answer === 'yes' || practice.partner.giver.answer === 'maybe')
+          ((practice.user.taker.answer === 'yes' && practice.partner.giver.answer === 'yes') || 
+           (practice.user.taker.answer === 'maybe' && practice.partner.giver.answer === 'maybe'))
         ) {
           matchingDesires.push({
             type: 'role',
