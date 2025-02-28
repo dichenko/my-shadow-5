@@ -221,44 +221,46 @@ export default function MatchSwiper({ matches = [], onClose }) {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div className="progress-indicators-container">
-        {indicators}
-      </div>
-      
-      <div className="match-card" ref={cardRef}>
-        <div className="match-question">
-          {currentMatch.type === 'regular' ? (
-            currentMatch.questionText
-          ) : (
-            currentMatch.userQuestionText
-          )}
+      <div className="content-wrapper">
+        <div className="progress-indicators-container">
+          {indicators}
         </div>
         
-        <div className="match-answer">
-          {getAnswerText(currentMatch.userAnswer)}
-        </div>
-        
-        <div className="match-info">
-          {currentMatch.type === 'regular' ? (
-            <div className="match-regular-info">
-              <span className="user-answer">Вы: {getAnswerText(currentMatch.userAnswer)}</span>
-              <span className="partner-answer">Партнер: {getAnswerText(currentMatch.partnerAnswer)}</span>
-            </div>
-          ) : (
-            <div className="match-role-info">
-              {currentMatch.userRole === 'giver' ? (
-                <>
-                  <span className="user-role">Вы хотите дать: {getAnswerText(currentMatch.userAnswer)}</span>
-                  <span className="partner-role">Партнер хочет получить: {getAnswerText(currentMatch.partnerAnswer)}</span>
-                </>
-              ) : (
-                <>
-                  <span className="user-role">Вы хотите получить: {getAnswerText(currentMatch.userAnswer)}</span>
-                  <span className="partner-role">Партнер хочет дать: {getAnswerText(currentMatch.partnerAnswer)}</span>
-                </>
-              )}
-            </div>
-          )}
+        <div className="match-card" ref={cardRef}>
+          <div className="match-question">
+            {currentMatch.type === 'regular' ? (
+              currentMatch.questionText
+            ) : (
+              currentMatch.userQuestionText
+            )}
+          </div>
+          
+          <div className="match-answer">
+            {getAnswerText(currentMatch.userAnswer)}
+          </div>
+          
+          <div className="match-info">
+            {currentMatch.type === 'regular' ? (
+              <div className="match-regular-info">
+                <span className="user-answer">Вы: {getAnswerText(currentMatch.userAnswer)}</span>
+                <span className="partner-answer">Партнер: {getAnswerText(currentMatch.partnerAnswer)}</span>
+              </div>
+            ) : (
+              <div className="match-role-info">
+                {currentMatch.userRole === 'giver' ? (
+                  <>
+                    <span className="user-role">Вы хотите дать: {getAnswerText(currentMatch.userAnswer)}</span>
+                    <span className="partner-role">Партнер хочет получить: {getAnswerText(currentMatch.partnerAnswer)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="user-role">Вы хотите получить: {getAnswerText(currentMatch.userAnswer)}</span>
+                    <span className="partner-role">Партнер хочет дать: {getAnswerText(currentMatch.partnerAnswer)}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
@@ -282,27 +284,37 @@ export default function MatchSwiper({ matches = [], onClose }) {
           padding: 1rem;
         }
         
+        .content-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          max-width: 500px;
+        }
+        
         .progress-indicators-container {
           display: flex;
           justify-content: center;
           gap: 8px;
           margin-bottom: 20px;
           width: 100%;
-          max-width: 500px;
           padding: 0 10px;
         }
         
         .progress-indicator {
-          height: 10px;
+          height: 12px;
           flex: 1;
-          border-radius: 2px;
+          border-radius: 3px;
           transition: all 0.3s ease;
           cursor: pointer;
+          border: 1px solid rgba(0, 0, 0, 0.1);
         }
         
         .progress-indicator.active {
           background-color: #FF4D8D; /* Яркий розовый */
           box-shadow: 0 0 8px rgba(255, 77, 141, 0.6);
+          height: 14px;
+          margin-top: -2px;
         }
         
         .progress-indicator.passed {
