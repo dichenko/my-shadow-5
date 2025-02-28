@@ -168,46 +168,25 @@ export default function BlockQuestions() {
       // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
       const userId = user.dbId || user.id;
       
+      // Создаем копию массива вопросов для обновления
+      const updatedQuestions = [...questions];
+      const answeredQuestionIndex = currentQuestionIndex;
+      
+      // Определяем следующий индекс до удаления вопроса
+      let nextIndex = currentQuestionIndex;
+      if (updatedQuestions.length > 1) {
+        // Если это последний вопрос, переходим к первому, иначе к следующему
+        nextIndex = currentQuestionIndex >= updatedQuestions.length - 1 ? 0 : currentQuestionIndex + 1;
+      }
+      
       // Запускаем анимацию исчезновения текущего вопроса
       setFadeOut(true);
       
-      // Отправляем запрос на сервер
-      const response = await fetch('/api/answers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          questionId: currentQuestion.id,
-          userId: userId,
-          text: answer, // "yes", "no", "maybe"
-        }),
-      });
-      
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error('Ошибка при парсинге ответа:', parseError);
-        throw new Error('Ошибка при получении ответа от сервера');
-      }
-      
-      if (!response.ok) {
-        console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
-        throw new Error(data.error || 'Не удалось сохранить ответ');
-      }
-      
-      console.log('Ответ успешно сохранен:', data);
-      
-      // Инвалидируем кэш для обновления счетчика ответов
-      queryClient.invalidateQueries(['blocks-with-questions']);
-      
-      // Удаляем отвеченный вопрос из списка
-      const updatedQuestions = [...questions];
-      updatedQuestions.splice(currentQuestionIndex, 1);
-      
-      // Ждем завершения анимации перед обновлением списка вопросов
+      // Немедленно подготавливаем следующий вопрос
       setTimeout(() => {
+        // Удаляем отвеченный вопрос из списка
+        updatedQuestions.splice(answeredQuestionIndex, 1);
+        
         // Если это был последний вопрос, показываем сообщение о завершении
         if (updatedQuestions.length === 0) {
           setShowCompletionMessage(true);
@@ -221,20 +200,62 @@ export default function BlockQuestions() {
           // Обновляем список вопросов, удаляя отвеченный
           setQuestions(updatedQuestions);
           
-          // Если текущий индекс выходит за пределы нового массива, сбрасываем его на 0
-          if (currentQuestionIndex >= updatedQuestions.length) {
+          // Корректируем индекс, если необходимо
+          if (answeredQuestionIndex >= updatedQuestions.length) {
             setCurrentQuestionIndex(0);
+          } else if (answeredQuestionIndex < nextIndex && nextIndex > 0) {
+            // Если удаленный вопрос был перед следующим, корректируем индекс
+            setCurrentQuestionIndex(nextIndex - 1);
+          } else {
+            setCurrentQuestionIndex(nextIndex);
           }
           
           // Запускаем анимацию появления нового вопроса
           setFadeOut(false);
         }
+      }, 150); // Уменьшаем время анимации исчезновения для более быстрого перехода
+      
+      // Отправляем запрос на сервер в фоновом режиме
+      fetch('/api/answers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionId: currentQuestion.id,
+          userId: userId,
+          text: answer, // "yes", "no", "maybe"
+        }),
+      })
+      .then(async (response) => {
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          console.error('Ошибка при парсинге ответа:', parseError);
+          return;
+        }
         
+        if (!response.ok) {
+          console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
+          return;
+        }
+        
+        console.log('Ответ успешно сохранен:', data);
+        
+        // Инвалидируем кэш для обновления счетчика ответов
+        queryClient.invalidateQueries(['blocks-with-questions']);
+      })
+      .catch(err => {
+        console.error('Ошибка при отправке ответа:', err);
+        // Ошибка при отправке не должна влиять на UX, просто логируем
+      })
+      .finally(() => {
         setSubmitting(false);
-      }, 300); // Время анимации исчезновения
+      });
       
     } catch (err) {
-      console.error('Ошибка при отправке ответа:', err);
+      console.error('Ошибка при подготовке отправки ответа:', err);
       setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
       
       // В случае ошибки отменяем анимацию исчезновения
@@ -359,6 +380,15 @@ export default function BlockQuestions() {
     // Используем ID блока для выбора градиента
     return block ? gradients[(block.id - 1) % gradients.length] : gradients[0];
   };
+
+  // Добавляем предзагрузку изображений для анимации сердечек
+  useEffect(() => {
+    // Предзагружаем сердечки для анимации завершения
+    if (questions.length === 1) {
+      createHearts();
+      setTimeout(() => setHearts([]), 100); // Скрываем их после предзагрузки
+    }
+  }, [questions.length]);
 
   return (
     <div className="container">
@@ -611,6 +641,7 @@ export default function BlockQuestions() {
           display: flex;
           justify-content: center;
           align-items: center;
+          will-change: transform, opacity; /* Оптимизация для анимаций */
         }
         
         .question-text-container {
@@ -677,11 +708,13 @@ export default function BlockQuestions() {
         .fade-out {
           opacity: 0;
           transform: translateY(-10px);
+          transition: opacity 0.15s ease-out, transform 0.15s ease-out;
         }
         
         .fade-in {
           opacity: 1;
           transform: translateY(0);
+          transition: opacity 0.15s ease-in, transform 0.15s ease-in;
         }
         
         /* Стили для экрана завершения */
