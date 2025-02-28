@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoadingScreen({ timeout = 5000 }) {
   const [showRedirect, setShowRedirect] = useState(false);
@@ -16,13 +17,17 @@ export default function LoadingScreen({ timeout = 5000 }) {
     <div className="loading-container">
       {!showRedirect ? (
         <div className="loading-content">
-          <div className="logo">
-            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="5" />
-              <path d="M30 50 L45 65 L70 35" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <h1 className="app-title">MyShadow</h1>
+          <div className="loader-image">
+            <Image 
+              src="/images/loading-image.png" 
+              alt="Loading" 
+              width={200} 
+              height={200}
+              priority 
+            />
           </div>
-          <div className="loading-text">Загрузка...</div>
+          <div className="loading-text">Загрузка</div>
         </div>
       ) : (
         <div className="redirect-content">
@@ -54,11 +59,23 @@ export default function LoadingScreen({ timeout = 5000 }) {
           align-items: center;
           text-align: center;
         }
-        
-        .logo {
-          color: var(--tg-theme-button-color, #2481cc);
-          animation: pulse 1.5s infinite;
+
+        .app-title {
+          text-align: center;
+          font-size: 2.5rem;
+          font-weight: bold;
           margin-bottom: 2rem;
+          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-family: 'Montserrat', sans-serif;
+          letter-spacing: 1px;
+        }
+        
+        .loader-image {
+          margin: 2rem 0;
+          animation: pulse 1.5s infinite;
         }
         
         .loading-text {
@@ -68,16 +85,13 @@ export default function LoadingScreen({ timeout = 5000 }) {
         
         @keyframes pulse {
           0% {
-            opacity: 0.6;
-            transform: scale(0.98);
+            opacity: 1;
           }
           50% {
-            opacity: 1;
-            transform: scale(1.02);
+            opacity: 0.9;
           }
           100% {
-            opacity: 0.6;
-            transform: scale(0.98);
+            opacity: 1;
           }
         }
         

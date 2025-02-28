@@ -3,14 +3,13 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { initTelegramApp, saveUserData, setupBackButton, setupHeader } from '../utils/telegram';
 import { useUser } from '../utils/context';
-import LoadingScreen from '../components/LoadingScreen';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
 import { useQuery } from '@tanstack/react-query';
 import { fetchBlocksWithQuestions } from '../utils/api';
 
 export default function Questions() {
-  const { user, loading: userLoading } = useUser();
+  const { user } = useUser();
   const [telegramInitialized, setTelegramInitialized] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
@@ -75,11 +74,6 @@ export default function Questions() {
     
     initApp();
   }, [user]);
-
-  // Если данные из Telegram не получены в течение 5 секунд, показываем экран с предложением перейти в бот
-  if (userLoading && !user) {
-    return <LoadingScreen timeout={5000} />;
-  }
 
   return (
     <div className="container">
