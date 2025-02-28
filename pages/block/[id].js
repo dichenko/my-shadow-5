@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -18,6 +18,8 @@ export default function BlockQuestions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
+  const questionCardRef = useRef(null);
 
   // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
   useEffect(() => {
@@ -89,6 +91,33 @@ export default function BlockQuestions() {
     fetchBlockData();
   }, [id, user]);
 
+  // Функция для предварительной подготовки следующего вопроса
+  const prepareNextQuestion = () => {
+    if (questions.length > 0 && currentQuestionIndex < questions.length - 1) {
+      // Предварительно загружаем следующий вопрос в кэш браузера
+      const nextQuestion = questions[currentQuestionIndex + 1];
+      if (nextQuestion && nextQuestion.text) {
+        // Создаем невидимый элемент для предзагрузки текста
+        const preloadDiv = document.createElement('div');
+        preloadDiv.style.position = 'absolute';
+        preloadDiv.style.opacity = '0';
+        preloadDiv.style.pointerEvents = 'none';
+        preloadDiv.innerText = nextQuestion.text;
+        document.body.appendChild(preloadDiv);
+        
+        // Удаляем элемент после короткой задержки
+        setTimeout(() => {
+          document.body.removeChild(preloadDiv);
+        }, 100);
+      }
+    }
+  };
+
+  // Вызываем предзагрузку при изменении текущего вопроса
+  useEffect(() => {
+    prepareNextQuestion();
+  }, [currentQuestionIndex, questions]);
+
   // Функция для отправки ответа
   const submitAnswer = async (answer) => {
     if (!user || !questions.length || submitting) return;
@@ -102,54 +131,94 @@ export default function BlockQuestions() {
       // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
       const userId = user.dbId || user.id;
       
-      console.log('Отправка ответа:', {
-        questionId: currentQuestion.id,
-        userId: userId,
-        userType: user.dbId ? 'dbId' : 'telegramId',
-        text: answer
-      });
+      // Сохраняем текущий индекс вопроса и общее количество вопросов
+      const isLastQuestion = currentQuestionIndex >= questions.length - 1;
       
-      const response = await fetch('/api/answers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Запускаем анимацию исчезновения текущего вопроса
+      setFadeOut(true);
+      
+      // Ждем завершения анимации перед переходом к следующему вопросу
+      setTimeout(() => {
+        // Оптимистично обновляем UI - сразу переходим к следующему вопросу
+        if (!isLastQuestion) {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        }
+        // Запускаем анимацию появления нового вопроса
+        setFadeOut(false);
+      }, 150); // Время анимации исчезновения
+      
+      // Отправляем запрос на сервер асинхронно
+      const saveAnswerPromise = (async () => {
+        console.log('Отправка ответа:', {
           questionId: currentQuestion.id,
           userId: userId,
-          text: answer, // "yes", "no", "maybe"
-        }),
-      });
+          userType: user.dbId ? 'dbId' : 'telegramId',
+          text: answer
+        });
+        
+        const response = await fetch('/api/answers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            questionId: currentQuestion.id,
+            userId: userId,
+            text: answer, // "yes", "no", "maybe"
+          }),
+        });
+        
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          console.error('Ошибка при парсинге ответа:', parseError);
+          throw new Error('Ошибка при получении ответа от сервера');
+        }
+        
+        if (!response.ok) {
+          console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
+          throw new Error(data.error || 'Не удалось сохранить ответ');
+        }
+        
+        console.log('Ответ успешно сохранен:', data);
+        return data;
+      })();
       
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error('Ошибка при парсинге ответа:', parseError);
-        throw new Error('Ошибка при получении ответа от сервера');
-      }
+      // Обрабатываем результат запроса в фоновом режиме
+      saveAnswerPromise
+        .then(() => {
+          // Инвалидируем кэш для обновления счетчика ответов в фоновом режиме
+          return queryClient.invalidateQueries(['blocks-with-questions']);
+        })
+        .then(() => {
+          // Если это был последний вопрос, возвращаемся на страницу блоков
+          if (isLastQuestion) {
+            router.push('/questions');
+          }
+        })
+        .catch(err => {
+          console.error('Ошибка при отправке ответа:', err);
+          // В случае ошибки возвращаем предыдущий вопрос
+          if (!isLastQuestion) {
+            setFadeOut(true);
+            setTimeout(() => {
+              setCurrentQuestionIndex(currentQuestionIndex);
+              setFadeOut(false);
+            }, 150);
+          }
+          setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
+          setSubmitting(false);
+        });
+        
+      // Устанавливаем таймаут для сброса состояния submitting, даже если запрос еще не завершен
+      setTimeout(() => {
+        setSubmitting(false);
+      }, 300); // Немного больше времени, чем анимация, чтобы избежать мерцания кнопок
       
-      if (!response.ok) {
-        console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
-        throw new Error(data.error || 'Не удалось сохранить ответ');
-      }
-      
-      console.log('Ответ успешно сохранен:', data);
-      
-      // Инвалидируем кэш для обновления счетчика ответов
-      await queryClient.invalidateQueries(['blocks-with-questions']);
-      
-      // Переходим к следующему вопросу или возвращаемся на страницу блоков
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      } else {
-        // Если это был последний вопрос, возвращаемся на страницу блоков
-        router.push('/questions');
-      }
     } catch (err) {
-      console.error('Ошибка при отправке ответа:', err);
+      console.error('Ошибка при подготовке отправки ответа:', err);
       setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -210,7 +279,10 @@ export default function BlockQuestions() {
           <div className="error">Вопрос не найден. Пожалуйста, вернитесь к списку блоков.</div>
         ) : (
           <div className="question-container">
-            <div className="question-card">
+            <div 
+              ref={questionCardRef}
+              className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'}`}
+            >
               <p className="question-text">{currentQuestion.text}</p>
             </div>
             
@@ -218,7 +290,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-want"
                 onClick={() => submitAnswer('yes')}
-                disabled={submitting}
+                disabled={submitting || fadeOut}
               >
                 ХОЧУ
               </button>
@@ -226,7 +298,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-dont-want"
                 onClick={() => submitAnswer('no')}
-                disabled={submitting}
+                disabled={submitting || fadeOut}
               >
                 НЕ ХОЧУ
               </button>
@@ -234,7 +306,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-maybe"
                 onClick={() => submitAnswer('maybe')}
-                disabled={submitting}
+                disabled={submitting || fadeOut}
               >
                 сомневаюсь
               </button>
@@ -324,6 +396,7 @@ export default function BlockQuestions() {
           width: 100%;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
           text-align: center;
+          transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
         }
         
         .question-text {
@@ -376,6 +449,16 @@ export default function BlockQuestions() {
           color: var(--tg-theme-hint-color, #999999);
           font-size: 0.9rem;
           font-weight: normal;
+        }
+        
+        .fade-out {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        
+        .fade-in {
+          opacity: 1;
+          transform: translateY(0);
         }
       `}</style>
     </div>
