@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import BottomMenu from '../components/BottomMenu';
 import { useUser } from '../utils/context';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Settings() {
   const { user } = useUser();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [message, setMessage] = useState(null);
@@ -37,6 +41,15 @@ export default function Settings() {
 
       setMessage(data.message || 'Все ваши ответы успешно удалены');
       setShowConfirmation(false);
+      
+      // Инвалидируем кэш для обновления счетчика ответов
+      await queryClient.invalidateQueries(['blocks-with-questions']);
+      
+      // Устанавливаем таймаут для перенаправления на главную страницу
+      setTimeout(() => {
+        router.push('/questions');
+      }, 1500);
+      
     } catch (err) {
       console.error('Ошибка при удалении ответов:', err);
       setError(err.message || 'Не удалось удалить ответы. Пожалуйста, попробуйте еще раз.');
