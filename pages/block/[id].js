@@ -3,75 +3,69 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useUser } from '../../utils/context';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchBlock, fetchQuestions, submitAnswer } from '../../utils/api';
 
 export default function BlockQuestions() {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useUser();
-  const queryClient = useQueryClient();
   
+  const [block, setBlock] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Получаем информацию о блоке с использованием React Query
-  const { 
-    data: block, 
-    isLoading: blockLoading,
-    error: blockError
-  } = useQuery({
-    queryKey: ['block', id],
-    queryFn: () => fetchBlock(id),
-    enabled: !!id,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Получаем вопросы блока с использованием React Query
-  const { 
-    data: questions = [], 
-    isLoading: questionsLoading,
-    error: questionsError
-  } = useQuery({
-    queryKey: ['questions', id, user?.id || user?.tgId],
-    queryFn: () => fetchQuestions(id, user?.id || user?.tgId),
-    enabled: !!id && !!user,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Мутация для отправки ответа
-  const answerMutation = useMutation({
-    mutationFn: submitAnswer,
-    onSuccess: () => {
-      // При успешной отправке ответа инвалидируем кэш вопросов
-      queryClient.invalidateQueries({ queryKey: ['questions', id, user?.id || user?.tgId] });
-      // Также инвалидируем кэш блоков с вопросами, чтобы обновить прогресс
-      queryClient.invalidateQueries({ queryKey: ['blocks-with-questions', user?.id || user?.tgId] });
-    },
-  });
-
-  // Обрабатываем ошибки загрузки
   useEffect(() => {
-    if (blockError) {
-      setError('Не удалось загрузить информацию о блоке');
-      console.error('Ошибка при загрузке блока:', blockError);
+    async function fetchBlockData() {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Получаем информацию о блоке
+        const blockResponse = await fetch(`/api/blocks?id=${id}`);
+        if (!blockResponse.ok) {
+          throw new Error('Не удалось загрузить информацию о блоке');
+        }
+        const blockData = await blockResponse.json();
+        setBlock(blockData);
+        
+        // Получаем вопросы блока, исключая те, на которые пользователь уже ответил
+        let url = `/api/questions?blockId=${id}`;
+        if (user && user.id) {
+          url += `&userId=${user.id}`;
+        } else if (user && user.tgId) {
+          url += `&userId=${user.tgId}`;
+        }
+        
+        const questionsResponse = await fetch(url);
+        if (!questionsResponse.ok) {
+          throw new Error('Не удалось загрузить вопросы блока');
+        }
+        const questionsData = await questionsResponse.json();
+        setQuestions(questionsData);
+        
+        // Если нет вопросов, на которые пользователь еще не ответил, показываем сообщение
+        if (questionsData.length === 0) {
+          setError('Вы уже ответили на все вопросы в этом блоке');
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке данных блока:', err);
+        setError(err.message || 'Произошла ошибка при загрузке данных');
+      } finally {
+        setLoading(false);
+      }
     }
-    if (questionsError) {
-      setError('Не удалось загрузить вопросы блока');
-      console.error('Ошибка при загрузке вопросов:', questionsError);
-    }
-  }, [blockError, questionsError]);
+
+    fetchBlockData();
+  }, [id, user]);
 
   // Функция для отправки ответа
-  const handleSubmitAnswer = async (answer) => {
-    if (!user || !questions.length || submitting || !currentQuestion) return;
+  const submitAnswer = async (answer) => {
+    if (!user || !questions.length || submitting) return;
     
     const currentQuestion = questions[currentQuestionIndex];
-    if (!currentQuestion) {
-      setError('Вопрос не найден');
-      return;
-    }
     
     try {
       setSubmitting(true);
@@ -87,54 +81,66 @@ export default function BlockQuestions() {
         text: answer
       });
       
-      // Используем мутацию для отправки ответа
-      await answerMutation.mutateAsync({
-        questionId: currentQuestion.id,
-        userId: userId,
-        text: answer, // "yes", "no", "maybe"
+      const response = await fetch('/api/answers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionId: currentQuestion.id,
+          userId: userId,
+          text: answer, // "yes", "no", "maybe"
+        }),
       });
       
-      // Переходим к следующему вопросу или завершаем
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Ошибка при парсинге ответа:', parseError);
+        throw new Error('Ошибка при получении ответа от сервера');
+      }
+      
+      if (!response.ok) {
+        console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
+        throw new Error(data.error || 'Не удалось сохранить ответ');
+      }
+      
+      console.log('Ответ успешно сохранен:', data);
+      
+      // Переходим к следующему вопросу или возвращаемся на страницу блоков
       if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(prev => prev + 1);
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
-        // Если это был последний вопрос, показываем сообщение об успешном завершении
-        setError('Вы ответили на все вопросы в этом блоке');
+        // Если это был последний вопрос, возвращаемся на страницу блоков
+        router.push('/questions');
       }
     } catch (err) {
       console.error('Ошибка при отправке ответа:', err);
-      setError(err.message || 'Произошла ошибка при отправке ответа');
+      setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Предзагрузка следующего блока, если есть
-  useEffect(() => {
-    if (block && block.nextBlockId) {
-      // Предзагружаем следующий блок
-      queryClient.prefetchQuery({
-        queryKey: ['block', block.nextBlockId],
-        queryFn: () => fetchBlock(block.nextBlockId),
-      });
-      
-      // Предзагружаем вопросы следующего блока
-      queryClient.prefetchQuery({
-        queryKey: ['questions', block.nextBlockId, user?.id || user?.tgId],
-        queryFn: () => fetchQuestions(block.nextBlockId, user?.id || user?.tgId),
-        enabled: !!user,
-      });
-    }
-  }, [block, user, queryClient]);
-
   // Показываем загрузку, если данные еще не получены
-  const isLoading = blockLoading || questionsLoading;
+  const isLoading = loading;
   
   // Если нет вопросов, на которые пользователь еще не ответил
   const noQuestionsLeft = !isLoading && questions.length === 0;
   
-  // Текущий вопрос
-  const currentQuestion = questions[currentQuestionIndex];
+  // Проверяем, что индекс текущего вопроса находится в пределах массива
+  const isValidIndex = currentQuestionIndex >= 0 && currentQuestionIndex < questions.length;
+  
+  // Обновляем определение текущего вопроса с проверкой валидности индекса
+  const currentQuestion = isValidIndex ? questions[currentQuestionIndex] : null;
+  
+  // Если индекс вышел за пределы массива, сбрасываем его на 0
+  useEffect(() => {
+    if (questions.length > 0 && currentQuestionIndex >= questions.length) {
+      setCurrentQuestionIndex(0);
+    }
+  }, [questions, currentQuestionIndex]);
 
   return (
     <div className="container">
@@ -169,33 +175,35 @@ export default function BlockQuestions() {
           <div className="empty-state">
             <p>В этом блоке пока нет вопросов</p>
           </div>
+        ) : !currentQuestion ? (
+          <div className="error">Вопрос не найден. Пожалуйста, вернитесь к списку блоков.</div>
         ) : (
           <div className="question-container">
             <div className="question-card">
-              <p className="question-text">{currentQuestion?.text || 'Вопрос не найден'}</p>
+              <p className="question-text">{currentQuestion.text}</p>
             </div>
             
             <div className="answer-buttons">
               <button 
                 className="btn btn-want"
-                onClick={() => handleSubmitAnswer('yes')}
-                disabled={submitting || !currentQuestion}
+                onClick={() => submitAnswer('yes')}
+                disabled={submitting}
               >
                 ХОЧУ
               </button>
               
               <button 
                 className="btn btn-dont-want"
-                onClick={() => handleSubmitAnswer('no')}
-                disabled={submitting || !currentQuestion}
+                onClick={() => submitAnswer('no')}
+                disabled={submitting}
               >
                 НЕ ХОЧУ
               </button>
               
               <button 
                 className="btn btn-maybe"
-                onClick={() => handleSubmitAnswer('maybe')}
-                disabled={submitting || !currentQuestion}
+                onClick={() => submitAnswer('maybe')}
+                disabled={submitting}
               >
                 сомневаюсь
               </button>
