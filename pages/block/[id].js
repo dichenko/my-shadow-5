@@ -168,16 +168,48 @@ export default function BlockQuestions() {
       // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
       const userId = user.dbId || user.id;
       
-      // Сохраняем текущий индекс вопроса и общее количество вопросов
-      const isLastQuestion = currentQuestionIndex >= questions.length - 1;
-      
       // Запускаем анимацию исчезновения текущего вопроса
       setFadeOut(true);
       
-      // Ждем завершения анимации перед переходом к следующему вопросу
+      // Отправляем запрос на сервер
+      const response = await fetch('/api/answers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionId: currentQuestion.id,
+          userId: userId,
+          text: answer, // "yes", "no", "maybe"
+        }),
+      });
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Ошибка при парсинге ответа:', parseError);
+        throw new Error('Ошибка при получении ответа от сервера');
+      }
+      
+      if (!response.ok) {
+        console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
+        throw new Error(data.error || 'Не удалось сохранить ответ');
+      }
+      
+      console.log('Ответ успешно сохранен:', data);
+      
+      // Инвалидируем кэш для обновления счетчика ответов
+      queryClient.invalidateQueries(['blocks-with-questions']);
+      
+      // Удаляем отвеченный вопрос из списка
+      const updatedQuestions = [...questions];
+      updatedQuestions.splice(currentQuestionIndex, 1);
+      
+      // Ждем завершения анимации перед обновлением списка вопросов
       setTimeout(() => {
-        // Если это последний вопрос, показываем сообщение о завершении
-        if (isLastQuestion) {
+        // Если это был последний вопрос, показываем сообщение о завершении
+        if (updatedQuestions.length === 0) {
           setShowCompletionMessage(true);
           createHearts(); // Создаем анимацию сердечек
           
@@ -186,81 +218,27 @@ export default function BlockQuestions() {
             router.push('/questions');
           }, 2500);
         } else {
-          // Иначе переходим к следующему вопросу
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
+          // Обновляем список вопросов, удаляя отвеченный
+          setQuestions(updatedQuestions);
+          
+          // Если текущий индекс выходит за пределы нового массива, сбрасываем его на 0
+          if (currentQuestionIndex >= updatedQuestions.length) {
+            setCurrentQuestionIndex(0);
+          }
+          
           // Запускаем анимацию появления нового вопроса
           setFadeOut(false);
         }
-      }, 150); // Время анимации исчезновения
-      
-      // Отправляем запрос на сервер асинхронно
-      const saveAnswerPromise = (async () => {
-        console.log('Отправка ответа:', {
-          questionId: currentQuestion.id,
-          userId: userId,
-          userType: user.dbId ? 'dbId' : 'telegramId',
-          text: answer
-        });
         
-        const response = await fetch('/api/answers', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            questionId: currentQuestion.id,
-            userId: userId,
-            text: answer, // "yes", "no", "maybe"
-          }),
-        });
-        
-        let data;
-        try {
-          data = await response.json();
-        } catch (parseError) {
-          console.error('Ошибка при парсинге ответа:', parseError);
-          throw new Error('Ошибка при получении ответа от сервера');
-        }
-        
-        if (!response.ok) {
-          console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
-          throw new Error(data.error || 'Не удалось сохранить ответ');
-        }
-        
-        console.log('Ответ успешно сохранен:', data);
-        return data;
-      })();
-      
-      // Обрабатываем результат запроса в фоновом режиме
-      saveAnswerPromise
-        .then(() => {
-          // Инвалидируем кэш для обновления счетчика ответов в фоновом режиме
-          return queryClient.invalidateQueries(['blocks-with-questions']);
-        })
-        .catch(err => {
-          console.error('Ошибка при отправке ответа:', err);
-          // В случае ошибки возвращаем предыдущий вопрос
-          if (!isLastQuestion) {
-            setFadeOut(true);
-            setTimeout(() => {
-              setCurrentQuestionIndex(currentQuestionIndex);
-              setFadeOut(false);
-            }, 150);
-          } else {
-            setShowCompletionMessage(false); // Скрываем сообщение о завершении
-          }
-          setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
-          setSubmitting(false);
-        });
-        
-      // Устанавливаем таймаут для сброса состояния submitting, даже если запрос еще не завершен
-      setTimeout(() => {
         setSubmitting(false);
-      }, 300); // Немного больше времени, чем анимация, чтобы избежать мерцания кнопок
+      }, 300); // Время анимации исчезновения
       
     } catch (err) {
-      console.error('Ошибка при подготовке отправки ответа:', err);
+      console.error('Ошибка при отправке ответа:', err);
       setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
+      
+      // В случае ошибки отменяем анимацию исчезновения
+      setFadeOut(false);
       setSubmitting(false);
     }
   };
