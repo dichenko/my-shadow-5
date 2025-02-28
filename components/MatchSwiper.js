@@ -263,8 +263,9 @@ export default function MatchSwiper({ matches = [], onClose }) {
           background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          height: 320px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          overflow: auto;
         }
         
         .match-question {
@@ -272,6 +273,12 @@ export default function MatchSwiper({ matches = [], onClose }) {
           font-weight: 500;
           text-align: center;
           line-height: 1.4;
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow-y: auto;
+          padding: 0.5rem;
         }
         
         .match-answer {
@@ -279,6 +286,7 @@ export default function MatchSwiper({ matches = [], onClose }) {
           font-weight: 700;
           text-align: center;
           color: var(--tg-theme-button-color, #2481cc);
+          margin: 0.5rem 0;
         }
         
         .match-info {
