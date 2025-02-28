@@ -204,14 +204,14 @@ export default function MatchSwiper({ matches = [], onClose }) {
       onTouchEnd={onTouchEnd}
     >
       <div className="content-wrapper">
-        {/* Индикаторы прогресса */}
+        {/* Индикаторы прогресса (Page Controls) */}
         <div 
           style={{
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
-            gap: '6px',
-            marginBottom: '20px',
+            gap: '8px',
+            marginBottom: '24px',
             padding: '0 10px',
             marginTop: '20px'
           }}
@@ -221,20 +221,22 @@ export default function MatchSwiper({ matches = [], onClose }) {
               key={index}
               onClick={() => !isAnimating && setCurrentIndex(index)}
               style={{
-                height: index === currentIndex ? '16px' : '12px',
+                height: '4px',
                 flex: 1,
-                maxWidth: '50px',
-                backgroundColor: 
+                maxWidth: '40px',
+                background: 
                   index === currentIndex 
-                    ? '#FF4D8D' 
+                    ? 'linear-gradient(90deg, #FF6B6B, #FF4D8D)' 
                     : index < currentIndex 
-                      ? '#9C27B0' 
-                      : 'rgba(0, 0, 0, 0.2)',
-                borderRadius: '6px',
+                      ? 'linear-gradient(90deg, #8A2BE2, #9C27B0)' 
+                      : '#E0E0E0',
+                borderRadius: '2px',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: index === currentIndex ? '0 0 8px rgba(255, 77, 141, 0.6)' : 'none',
-                border: '1px solid rgba(0, 0, 0, 0.1)'
+                transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                opacity: index === currentIndex ? 1 : index < currentIndex ? 0.8 : 0.5,
+                transform: index === currentIndex ? 'scaleY(1.2)' : 'scaleY(1)',
+                transformOrigin: 'center',
+                boxShadow: index === currentIndex ? '0 1px 3px rgba(255, 77, 141, 0.3)' : 'none'
               }}
             />
           ))}
