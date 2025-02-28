@@ -12,15 +12,22 @@ export default function MatchSwiper({ matches = [], onClose }) {
   
   // Обработчики событий касания
   const onTouchStart = (e) => {
+    // Предотвращаем всплытие события, чтобы не активировать навигацию между страницами
+    e.stopPropagation();
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
   
   const onTouchMove = (e) => {
+    // Предотвращаем всплытие события
+    e.stopPropagation();
     setTouchEnd(e.targetTouches[0].clientX);
   };
   
-  const onTouchEnd = () => {
+  const onTouchEnd = (e) => {
+    // Предотвращаем всплытие события
+    e.stopPropagation();
+    
     if (!touchStart || !touchEnd || isAnimating) return;
     
     const distance = touchStart - touchEnd;
@@ -120,6 +127,23 @@ export default function MatchSwiper({ matches = [], onClose }) {
     // Удаляем стили при размонтировании компонента
     return () => {
       document.head.removeChild(styleElement);
+    };
+  }, []);
+  
+  // Предотвращаем прокрутку страницы при свайпе внутри компонента
+  useEffect(() => {
+    const preventDefaultTouchMove = (e) => {
+      if (e.target.closest('.match-swiper-container')) {
+        e.preventDefault();
+      }
+    };
+    
+    // Добавляем обработчик события touchmove на документ
+    document.addEventListener('touchmove', preventDefaultTouchMove, { passive: false });
+    
+    // Удаляем обработчик при размонтировании компонента
+    return () => {
+      document.removeEventListener('touchmove', preventDefaultTouchMove);
     };
   }, []);
   
