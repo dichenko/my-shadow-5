@@ -25,12 +25,18 @@ export default function BlockQuestions() {
   const [allQuestionsAnswered, setAllQuestionsAnswered] = useState(false);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const questionCardRef = useRef(null);
+  
+  // Добавляем состояние для времени охлаждения
+  const [isCooldown, setIsCooldown] = useState(false);
+  const [cooldownProgress, setCooldownProgress] = useState(100);
+  const cooldownTime = 2500; // 2.5 секунды охлаждения
+  const cooldownIntervalRef = useRef(null);
 
   // Добавляем состояния для обработки свайпа
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const [swiping, setSwiping] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState(null); // Добавляем состояние для направления свайпа
+  const [swipeDirection, setSwipeDirection] = useState(null);
 
   // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
   useEffect(() => {
@@ -156,15 +162,56 @@ export default function BlockQuestions() {
     setHearts(newHearts);
   };
 
+  // Функция для запуска времени охлаждения
+  const startCooldown = () => {
+    setIsCooldown(true);
+    setCooldownProgress(100);
+    
+    // Создаем интервал для обновления прогресса
+    const startTime = Date.now();
+    const intervalTime = 50; // Обновляем каждые 50мс для плавной анимации
+    
+    // Очищаем предыдущий интервал, если он существует
+    if (cooldownIntervalRef.current) {
+      clearInterval(cooldownIntervalRef.current);
+    }
+    
+    cooldownIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = 100 - (elapsed / cooldownTime) * 100;
+      
+      if (progress <= 0) {
+        // Завершаем охлаждение
+        clearInterval(cooldownIntervalRef.current);
+        setCooldownProgress(0);
+        setIsCooldown(false);
+      } else {
+        setCooldownProgress(progress);
+      }
+    }, intervalTime);
+  };
+  
+  // Останавливаем интервал при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current);
+      }
+    };
+  }, []);
+
   // Функция для отправки ответа
   const submitAnswer = async (answer) => {
-    if (!user || !questions.length || submitting) return;
+    if (!user || !questions.length || submitting || isCooldown) return;
     
     const currentQuestion = questions[currentQuestionIndex];
     
     try {
       setSubmitting(true);
       setError(null);
+      
+      // Запускаем время охлаждения
+      startCooldown();
       
       // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
       const userId = user.dbId || user.id;
@@ -317,40 +364,47 @@ export default function BlockQuestions() {
     }
   };
 
-  // Обработчики событий касания для свайпа
+  // Обработчики событий касания
   const onTouchStart = (e) => {
+    // Не реагируем на касания во время охлаждения
+    if (isCooldown) return;
+    
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
-    setSwipeDirection(null);
   };
   
   const onTouchMove = (e) => {
+    // Не реагируем на движения во время охлаждения
+    if (isCooldown) return;
+    
     setTouchEnd(e.targetTouches[0].clientX);
     
-    if (!touchStart || !questionCardRef.current) return;
-    
-    const distance = touchStart - e.targetTouches[0].clientX;
-    const isLeftSwipe = distance > 30;
-    const isRightSwipe = distance < -30;
-    
-    if (isLeftSwipe) {
-      setSwiping(true);
-      setSwipeDirection('left');
-      questionCardRef.current.classList.add('swiping');
-      questionCardRef.current.classList.remove('swiping-right');
-    } else if (isRightSwipe) {
-      setSwiping(true);
-      setSwipeDirection('right');
-      questionCardRef.current.classList.add('swiping-right');
-      questionCardRef.current.classList.remove('swiping');
-    } else {
-      setSwiping(false);
-      setSwipeDirection(null);
-      questionCardRef.current.classList.remove('swiping', 'swiping-right');
+    // Добавляем индикацию свайпа
+    if (touchStart && questionCardRef.current) {
+      const distance = e.targetTouches[0].clientX - touchStart;
+      // Показываем индикацию свайпа только если движение достаточное (> 10px)
+      if (Math.abs(distance) > 10) {
+        setSwiping(true);
+        if (distance > 0) {
+          setSwipeDirection('right');
+          questionCardRef.current.classList.add('swiping-right');
+          questionCardRef.current.classList.remove('swiping-left');
+        } else {
+          setSwipeDirection('left');
+          questionCardRef.current.classList.add('swiping-left');
+          questionCardRef.current.classList.remove('swiping-right');
+        }
+      } else {
+        setSwiping(false);
+        questionCardRef.current.classList.remove('swiping-left', 'swiping-right');
+      }
     }
   };
   
   const onTouchEnd = () => {
+    // Не реагируем на окончание касания во время охлаждения
+    if (isCooldown) return;
+    
     if (!touchStart || !touchEnd || submitting || fadeOut) return;
     
     const distance = touchStart - touchEnd;
@@ -371,7 +425,7 @@ export default function BlockQuestions() {
     setSwipeDirection(null);
     
     if (questionCardRef.current) {
-      questionCardRef.current.classList.remove('swiping', 'swiping-right');
+      questionCardRef.current.classList.remove('swiping', 'swiping-right', 'swiping-left');
     }
   };
 
@@ -516,25 +570,35 @@ export default function BlockQuestions() {
           <div className="question-container">
             {/* Индикаторы прогресса */}
             <div className="progress-indicators">
-              {Array.from({ length: questions.length }).map((_, index) => (
-                <div
-                  key={index}
-                  onClick={() => {
-                    if (fadeOut) return;
-                    setCurrentQuestionIndex(index);
-                  }}
-                  className={`progress-indicator ${index === currentQuestionIndex ? 'active' : ''} ${index < currentQuestionIndex ? 'completed' : ''}`}
-                />
-              ))}
+              {[...Array(totalQuestions)].map((_, i) => {
+                // Определяем, является ли индикатор активным или завершенным
+                const progressIndex = totalQuestions - questions.length + currentQuestionIndex;
+                const isActive = i === progressIndex;
+                const isCompleted = i < progressIndex;
+                
+                return (
+                  <div
+                    key={i}
+                    className={`progress-indicator ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                  />
+                );
+              })}
             </div>
             
+            {/* Индикатор охлаждения */}
+            {isCooldown && (
+              <div className="cooldown-indicator" style={{ 
+                width: `${cooldownProgress}%`,
+                opacity: cooldownProgress / 100
+              }}></div>
+            )}
+            
             <div 
+              className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'}`}
               ref={questionCardRef}
-              className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'} ${swiping ? 'swiping' : ''}`}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
-              style={{ background: getBlockGradient() }}
             >
               <div className="question-text-container">
                 <p className="question-text">{currentQuestion.text}</p>
@@ -545,7 +609,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-want"
                 onClick={() => submitAnswer('yes')}
-                disabled={submitting || fadeOut}
+                disabled={submitting || fadeOut || isCooldown}
               >
                 ХОЧУ
               </button>
@@ -553,7 +617,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-dont-want"
                 onClick={() => submitAnswer('no')}
-                disabled={submitting || fadeOut}
+                disabled={submitting || fadeOut || isCooldown}
               >
                 НЕ ХОЧУ
               </button>
@@ -561,7 +625,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-maybe"
                 onClick={() => submitAnswer('maybe')}
-                disabled={submitting || fadeOut}
+                disabled={submitting || fadeOut || isCooldown}
               >
                 сомневаюсь
               </button>
@@ -940,6 +1004,16 @@ export default function BlockQuestions() {
           transform: translateX(30px);
           opacity: 0.7;
           transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+        }
+
+        /* Добавляем стили для индикатора охлаждения */
+        .cooldown-indicator {
+          height: 4px;
+          background: linear-gradient(90deg, #FF6B6B, #FF4D8D);
+          border-radius: 2px;
+          margin-bottom: 16px;
+          transition: width 0.05s linear, opacity 0.05s linear;
+          box-shadow: 0 0 4px rgba(255, 77, 141, 0.5);
         }
       `}</style>
     </div>
