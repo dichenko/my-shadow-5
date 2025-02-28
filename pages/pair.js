@@ -5,7 +5,7 @@ import BottomMenu from '../components/BottomMenu';
 import MatchSwiper from '../components/MatchSwiper';
 import { useUser } from '../utils/context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchPairCode, fetchMatchingDesires, createPair, deletePair } from '../utils/api';
+import { fetchPairCode, fetchMatchingDesires, createPair, deletePair, fetchBlocksWithQuestions } from '../utils/api';
 import { setupBackButton, setupHeader } from '../utils/telegram';
 
 export default function Pair() {
@@ -49,6 +49,25 @@ export default function Pair() {
   });
 
   const matchingDesires = matchingData.matchingDesires || [];
+
+  // Получаем блоки с вопросами для определения общего количества вопросов в каждом блоке
+  const { 
+    data: blocksData = [], 
+    isLoading: blocksLoading
+  } = useQuery({
+    queryKey: ['blocks-with-questions'],
+    queryFn: () => fetchBlocksWithQuestions(),
+    enabled: !userLoading && !!user,
+    staleTime: 10 * 60 * 1000, // 10 минут
+  });
+
+  // Создаем словарь с количеством вопросов в каждом блоке
+  const blockQuestionsCount = {};
+  if (blocksData && blocksData.length > 0) {
+    blocksData.forEach(block => {
+      blockQuestionsCount[block.id] = block.questionsCount || 0;
+    });
+  }
 
   // Мутация для создания пары
   const createPairMutation = useMutation({
@@ -331,7 +350,7 @@ export default function Pair() {
                           <div className="block-info">
                             <h3 className="block-name">{block.blockName}</h3>
                             <span className="block-matches-count">
-                              {block.matches.length} совпадений
+                              Совпадения: {block.matches.length} из {blockQuestionsCount[block.blockId] || '?'}
                             </span>
                           </div>
                           <div className="block-arrow">
