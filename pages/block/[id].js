@@ -19,6 +19,8 @@ export default function BlockQuestions() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [hearts, setHearts] = useState([]);
   const questionCardRef = useRef(null);
 
   // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
@@ -118,6 +120,24 @@ export default function BlockQuestions() {
     prepareNextQuestion();
   }, [currentQuestionIndex, questions]);
 
+  // Функция для создания анимации сердечек
+  const createHearts = () => {
+    const newHearts = [];
+    const colors = ['#ff5e5e', '#ff8a8a', '#ffb6b6', '#ff0000', '#ffcece'];
+    
+    for (let i = 0; i < 15; i++) {
+      newHearts.push({
+        id: i,
+        left: Math.random() * 100,
+        size: Math.random() * 20 + 10,
+        animationDuration: Math.random() * 3 + 2,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+    
+    setHearts(newHearts);
+  };
+
   // Функция для отправки ответа
   const submitAnswer = async (answer) => {
     if (!user || !questions.length || submitting) return;
@@ -139,12 +159,21 @@ export default function BlockQuestions() {
       
       // Ждем завершения анимации перед переходом к следующему вопросу
       setTimeout(() => {
-        // Оптимистично обновляем UI - сразу переходим к следующему вопросу
-        if (!isLastQuestion) {
+        // Если это последний вопрос, показываем сообщение о завершении
+        if (isLastQuestion) {
+          setShowCompletionMessage(true);
+          createHearts(); // Создаем анимацию сердечек
+          
+          // Через 2.5 секунды переходим на главную страницу
+          setTimeout(() => {
+            router.push('/questions');
+          }, 2500);
+        } else {
+          // Иначе переходим к следующему вопросу
           setCurrentQuestionIndex(currentQuestionIndex + 1);
+          // Запускаем анимацию появления нового вопроса
+          setFadeOut(false);
         }
-        // Запускаем анимацию появления нового вопроса
-        setFadeOut(false);
       }, 150); // Время анимации исчезновения
       
       // Отправляем запрос на сервер асинхронно
@@ -191,12 +220,6 @@ export default function BlockQuestions() {
           // Инвалидируем кэш для обновления счетчика ответов в фоновом режиме
           return queryClient.invalidateQueries(['blocks-with-questions']);
         })
-        .then(() => {
-          // Если это был последний вопрос, возвращаемся на страницу блоков
-          if (isLastQuestion) {
-            router.push('/questions');
-          }
-        })
         .catch(err => {
           console.error('Ошибка при отправке ответа:', err);
           // В случае ошибки возвращаем предыдущий вопрос
@@ -206,6 +229,8 @@ export default function BlockQuestions() {
               setCurrentQuestionIndex(currentQuestionIndex);
               setFadeOut(false);
             }, 150);
+          } else {
+            setShowCompletionMessage(false); // Скрываем сообщение о завершении
           }
           setError(err.message || 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
           setSubmitting(false);
@@ -260,7 +285,7 @@ export default function BlockQuestions() {
         </Link>
       </div>
 
-      {questions.length > 0 && (
+      {questions.length > 0 && !showCompletionMessage && (
         <div className="question-counter">
           {currentQuestionIndex + 1}/{questions.length}
         </div>
@@ -274,6 +299,26 @@ export default function BlockQuestions() {
         ) : noQuestionsLeft ? (
           <div className="empty-state">
             <p>В этом блоке пока нет вопросов</p>
+          </div>
+        ) : showCompletionMessage ? (
+          <div className="completion-container">
+            <div className="completion-card">
+              <h2>Поздравляем!</h2>
+              <p>Вы ответили на все вопросы в этом блоке</p>
+              {hearts.map(heart => (
+                <div 
+                  key={heart.id}
+                  className="heart"
+                  style={{
+                    left: `${heart.left}%`,
+                    width: `${heart.size}px`,
+                    height: `${heart.size}px`,
+                    backgroundColor: heart.color,
+                    animationDuration: `${heart.animationDuration}s`
+                  }}
+                />
+              ))}
+            </div>
           </div>
         ) : !currentQuestion ? (
           <div className="error">Вопрос не найден. Пожалуйста, вернитесь к списку блоков.</div>
@@ -459,6 +504,90 @@ export default function BlockQuestions() {
         .fade-in {
           opacity: 1;
           transform: translateY(0);
+        }
+        
+        /* Стили для экрана завершения */
+        .completion-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          max-width: 500px;
+          animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .completion-card {
+          background-color: #f5f5f5;
+          border-radius: 12px;
+          padding: 2rem;
+          width: 100%;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .completion-card h2 {
+          margin-top: 0;
+          color: var(--tg-theme-button-color, #2481cc);
+          font-size: 1.5rem;
+        }
+        
+        .completion-card p {
+          font-size: 1.1rem;
+          margin-bottom: 0;
+        }
+        
+        .heart {
+          position: absolute;
+          transform: rotate(45deg);
+          opacity: 0;
+          animation: floatHeart 3s ease-in-out forwards;
+        }
+        
+        .heart:before,
+        .heart:after {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background-color: inherit;
+        }
+        
+        .heart:before {
+          top: -50%;
+          left: 0;
+        }
+        
+        .heart:after {
+          top: 0;
+          left: -50%;
+        }
+        
+        @keyframes floatHeart {
+          0% {
+            transform: rotate(45deg) translateY(0) scale(0);
+            opacity: 0;
+          }
+          20% {
+            opacity: 0.8;
+          }
+          100% {
+            transform: rotate(45deg) translateY(-100vh) scale(1);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>
