@@ -367,6 +367,21 @@ export default function BlockQuestions() {
     }
   }, [questions, currentQuestionIndex]);
 
+  // Определяем градиент для карточки вопроса на основе индекса блока
+  const getBlockGradient = () => {
+    // Массив градиентов для блоков в минималистичном стиле
+    const gradients = [
+      'linear-gradient(135deg, #E0E0E0 0%, #F5F5F5 100%)',
+      'linear-gradient(135deg, #D4D4D4 0%, #E8E8E8 100%)',
+      'linear-gradient(135deg, #CCCCCC 0%, #E0E0E0 100%)',
+      'linear-gradient(135deg, #C4C4C4 0%, #D8D8D8 100%)',
+      'linear-gradient(135deg, #BCBCBC 0%, #D0D0D0 100%)'
+    ];
+    
+    // Используем ID блока для выбора градиента
+    return block ? gradients[(block.id - 1) % gradients.length] : gradients[0];
+  };
+
   return (
     <div className="container">
       <Head>
@@ -483,8 +498,11 @@ export default function BlockQuestions() {
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
+              style={{ background: getBlockGradient() }}
             >
-              <p className="question-text">{currentQuestion.text}</p>
+              <div className="question-text-container">
+                <p className="question-text">{currentQuestion.text}</p>
+              </div>
             </div>
             
             <div className="answer-buttons">
@@ -605,14 +623,24 @@ export default function BlockQuestions() {
         }
         
         .question-card {
-          background-color: #f5f5f5;
           border-radius: 12px;
           padding: 2rem;
           margin-bottom: 2rem;
           width: 100%;
+          height: 250px; /* Фиксированная высота */
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          text-align: center;
           transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        
+        .question-text-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100%;
+          width: 100%;
         }
         
         .question-text {
@@ -620,6 +648,7 @@ export default function BlockQuestions() {
           font-size: 1.25rem;
           line-height: 1.5;
           font-weight: 500;
+          text-align: center;
         }
         
         .answer-buttons {
