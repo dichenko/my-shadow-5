@@ -288,7 +288,7 @@ export default function BlockQuestions() {
           setTimeout(() => {
             router.push('/questions');
           }, 2500);
-        }, 100);
+        }, 150); // Увеличиваем задержку, чтобы учесть время кулдауна
       } else {
         // Обновляем список вопросов, удаляя отвеченный
         setQuestions(updatedQuestions);
@@ -303,11 +303,11 @@ export default function BlockQuestions() {
           setCurrentQuestionIndex(nextIndex);
         }
         
-        // Минимальная задержка для анимации исчезновения
+        // Задержка для анимации исчезновения (увеличена для учета времени кулдауна)
         setTimeout(() => {
           // Запускаем анимацию появления нового вопроса
           setFadeOut(false);
-        }, 100);
+        }, 150);
       }
       
     } catch (err) {
@@ -570,19 +570,16 @@ export default function BlockQuestions() {
           <div className="question-container">
             {/* Индикаторы прогресса */}
             <div className="progress-indicators">
-              {[...Array(totalQuestions)].map((_, i) => {
-                // Определяем, является ли индикатор активным или завершенным
-                const progressIndex = totalQuestions - questions.length + currentQuestionIndex;
-                const isActive = i === progressIndex;
-                const isCompleted = i < progressIndex;
-                
-                return (
-                  <div
-                    key={i}
-                    className={`progress-indicator ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
-                  />
-                );
-              })}
+              {Array.from({ length: questions.length }).map((_, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    if (fadeOut || isCooldown) return;
+                    setCurrentQuestionIndex(index);
+                  }}
+                  className={`progress-indicator ${index === currentQuestionIndex ? 'active' : ''} ${index < currentQuestionIndex ? 'completed' : ''}`}
+                />
+              ))}
             </div>
             
             {/* Индикатор охлаждения */}
