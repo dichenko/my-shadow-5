@@ -182,50 +182,24 @@ export default function BlockQuestions() {
       // Запускаем анимацию исчезновения текущего вопроса
       setFadeOut(true);
       
-      // Немедленно подготавливаем следующий вопрос
-      setTimeout(() => {
-        // Удаляем отвеченный вопрос из списка
-        updatedQuestions.splice(answeredQuestionIndex, 1);
-        
-        // Если это был последний вопрос, показываем сообщение о завершении
-        if (updatedQuestions.length === 0) {
-          setShowCompletionMessage(true);
-          createHearts(); // Создаем анимацию сердечек
-          
-          // Через 2.5 секунды переходим на главную страницу
-          setTimeout(() => {
-            router.push('/questions');
-          }, 2500);
-        } else {
-          // Обновляем список вопросов, удаляя отвеченный
-          setQuestions(updatedQuestions);
-          
-          // Корректируем индекс, если необходимо
-          if (answeredQuestionIndex >= updatedQuestions.length) {
-            setCurrentQuestionIndex(0);
-          } else if (answeredQuestionIndex < nextIndex && nextIndex > 0) {
-            // Если удаленный вопрос был перед следующим, корректируем индекс
-            setCurrentQuestionIndex(nextIndex - 1);
-          } else {
-            setCurrentQuestionIndex(nextIndex);
-          }
-          
-          // Запускаем анимацию появления нового вопроса
-          setFadeOut(false);
-        }
-      }, 150); // Уменьшаем время анимации исчезновения для более быстрого перехода
+      // Подготавливаем данные для отправки на сервер
+      const answerData = {
+        questionId: currentQuestion.id,
+        userId: userId,
+        text: answer // "yes", "no", "maybe"
+      };
       
-      // Отправляем запрос на сервер в фоновом режиме
+      // Немедленно обновляем UI, не дожидаясь ответа сервера
+      // Удаляем отвеченный вопрос из списка
+      updatedQuestions.splice(answeredQuestionIndex, 1);
+      
+      // Запускаем отправку ответа на сервер в фоновом режиме
       fetch('/api/answers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          questionId: currentQuestion.id,
-          userId: userId,
-          text: answer, // "yes", "no", "maybe"
-        }),
+        body: JSON.stringify(answerData),
       })
       .then(async (response) => {
         let data;
@@ -253,6 +227,40 @@ export default function BlockQuestions() {
       .finally(() => {
         setSubmitting(false);
       });
+      
+      // Немедленно обновляем UI, не дожидаясь завершения запроса
+      // Если это был последний вопрос, показываем сообщение о завершении
+      if (updatedQuestions.length === 0) {
+        // Минимальная задержка для анимации исчезновения
+        setTimeout(() => {
+          setShowCompletionMessage(true);
+          createHearts(); // Создаем анимацию сердечек
+          
+          // Через 2.5 секунды переходим на главную страницу
+          setTimeout(() => {
+            router.push('/questions');
+          }, 2500);
+        }, 100);
+      } else {
+        // Обновляем список вопросов, удаляя отвеченный
+        setQuestions(updatedQuestions);
+        
+        // Корректируем индекс, если необходимо
+        if (answeredQuestionIndex >= updatedQuestions.length) {
+          setCurrentQuestionIndex(0);
+        } else if (answeredQuestionIndex < nextIndex && nextIndex > 0) {
+          // Если удаленный вопрос был перед следующим, корректируем индекс
+          setCurrentQuestionIndex(nextIndex - 1);
+        } else {
+          setCurrentQuestionIndex(nextIndex);
+        }
+        
+        // Минимальная задержка для анимации исчезновения
+        setTimeout(() => {
+          // Запускаем анимацию появления нового вопроса
+          setFadeOut(false);
+        }, 100);
+      }
       
     } catch (err) {
       console.error('Ошибка при подготовке отправки ответа:', err);
@@ -708,13 +716,13 @@ export default function BlockQuestions() {
         .fade-out {
           opacity: 0;
           transform: translateY(-10px);
-          transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+          transition: opacity 0.1s ease-out, transform 0.1s ease-out;
         }
         
         .fade-in {
           opacity: 1;
           transform: translateY(0);
-          transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+          transition: opacity 0.1s ease-in, transform 0.1s ease-in;
         }
         
         /* Стили для экрана завершения */
