@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import BottomMenu from '../components/BottomMenu';
 import { useUser } from '../utils/context';
 import { useQueryClient } from '@tanstack/react-query';
+import { setupBackButton, setupHeader } from '../utils/telegram';
 
 export default function Settings() {
   const { user } = useUser();
@@ -13,6 +14,24 @@ export default function Settings() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  // Настраиваем интерфейс Telegram WebApp
+  useEffect(() => {
+    // Показываем кнопку "Назад" и устанавливаем обработчик
+    setupBackButton(true, () => {
+      // При нажатии на кнопку "Назад" возвращаемся на главную страницу
+      router.push('/questions');
+    });
+    
+    // Устанавливаем заголовок страницы
+    setupHeader({ title: 'Настройки' });
+    
+    // При размонтировании компонента скрываем кнопку "Назад"
+    return () => {
+      setupBackButton(false);
+      setupHeader({ title: 'MyShadow' });
+    };
+  }, [router]);
 
   // Функция для очистки всех ответов пользователя
   const clearAllAnswers = async () => {

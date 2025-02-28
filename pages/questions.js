@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { initTelegramApp, saveUserData } from '../utils/telegram';
+import { initTelegramApp, saveUserData, setupBackButton, setupHeader } from '../utils/telegram';
 import { useUser } from '../utils/context';
 import LoadingScreen from '../components/LoadingScreen';
 import BlocksList from '../components/BlocksList';
@@ -36,6 +36,15 @@ export default function Questions() {
       console.error('Ошибка при загрузке блоков:', blocksError);
     }
   }, [blocksError]);
+
+  // Настраиваем интерфейс Telegram WebApp
+  useEffect(() => {
+    // Скрываем кнопку "Назад" на главной странице
+    setupBackButton(false);
+    
+    // Устанавливаем заголовок приложения
+    setupHeader({ title: 'MyShadow' });
+  }, []);
 
   useEffect(() => {
     async function initApp() {

@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useUser } from '../../utils/context';
 import { useQueryClient } from '@tanstack/react-query';
+import { setupBackButton, setupHeader } from '../../utils/telegram';
 
 export default function BlockQuestions() {
   const router = useRouter();
@@ -17,6 +18,28 @@ export default function BlockQuestions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
+  useEffect(() => {
+    // Показываем кнопку "Назад" и устанавливаем обработчик
+    setupBackButton(true, () => {
+      // Инвалидируем кэш для обновления счетчиков
+      queryClient.invalidateQueries(['blocks-with-questions']);
+      // При нажатии на кнопку "Назад" возвращаемся на страницу вопросов
+      router.push('/questions');
+    });
+    
+    // Устанавливаем заголовок, если блок загружен
+    if (block) {
+      setupHeader({ title: block.name });
+    }
+    
+    // При размонтировании компонента скрываем кнопку "Назад"
+    return () => {
+      setupBackButton(false);
+      setupHeader({ title: 'MyShadow' });
+    };
+  }, [router, block, queryClient]);
 
   useEffect(() => {
     async function fetchBlockData() {
@@ -32,6 +55,9 @@ export default function BlockQuestions() {
         }
         const blockData = await blockResponse.json();
         setBlock(blockData);
+        
+        // Устанавливаем заголовок после получения данных о блоке
+        setupHeader({ title: blockData.name });
         
         // Получаем вопросы блока, исключая те, на которые пользователь уже ответил
         let url = `/api/questions?blockId=${id}`;

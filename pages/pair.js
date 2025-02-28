@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import BottomMenu from '../components/BottomMenu';
 import { useUser } from '../utils/context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchPairCode, fetchMatchingDesires, createPair, deletePair } from '../utils/api';
+import { setupBackButton, setupHeader } from '../utils/telegram';
 
 export default function Pair() {
   const { user, loading: userLoading } = useUser();
@@ -14,6 +16,7 @@ export default function Pair() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const codeRef = useRef(null);
+  const router = useRouter();
 
   // Получаем код пары с использованием React Query
   const { 
@@ -137,6 +140,24 @@ export default function Pair() {
   // Определяем, идет ли загрузка
   const isLoading = userLoading || pairLoading || (hasPair && matchingLoading) || createPairMutation.isPending || deletePairMutation.isPending;
 
+  // Настраиваем интерфейс Telegram WebApp
+  useEffect(() => {
+    // Показываем кнопку "Назад" и устанавливаем обработчик
+    setupBackButton(true, () => {
+      // При нажатии на кнопку "Назад" возвращаемся на главную страницу
+      router.push('/questions');
+    });
+    
+    // Устанавливаем заголовок страницы
+    setupHeader({ title: 'Моя пара' });
+    
+    // При размонтировании компонента скрываем кнопку "Назад"
+    return () => {
+      setupBackButton(false);
+      setupHeader({ title: 'MyShadow' });
+    };
+  }, [router]);
+
   return (
     <div className="container">
       <Head>
@@ -147,7 +168,7 @@ export default function Pair() {
 
       <main className="main">
         <div className="pair-container">
-          <h1>Моя пара</h1>
+          <h1 className="pair-title">Моя пара</h1>
           
           {isLoading && <div className="loading">Загрузка...</div>}
           
@@ -323,7 +344,7 @@ export default function Pair() {
           padding: 1rem;
         }
         
-        h1 {
+        .pair-title {
           font-size: 1.8rem;
           text-align: center;
           margin-bottom: 1.5rem;
