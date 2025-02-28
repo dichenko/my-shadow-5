@@ -194,13 +194,23 @@ export default function MatchSwiper({ matches = [], onClose }) {
   
   const currentMatch = matches[currentIndex];
   
-  // Создаем массив индикаторов
-  const indicators = Array.from({ length: matches.length }, (_, index) => (
-    <div 
-      key={index} 
-      className={`progress-indicator ${index === currentIndex ? 'active' : ''}`}
-    />
-  ));
+  // Создаем массив индикаторов с разными цветами для пройденных, текущего и будущих
+  const indicators = Array.from({ length: matches.length }, (_, index) => {
+    let indicatorClass = 'future';
+    if (index === currentIndex) {
+      indicatorClass = 'active';
+    } else if (index < currentIndex) {
+      indicatorClass = 'passed';
+    }
+    
+    return (
+      <div 
+        key={index} 
+        className={`progress-indicator ${indicatorClass}`}
+        onClick={() => !isAnimating && setCurrentIndex(index)}
+      />
+    );
+  });
   
   return (
     <div 
@@ -288,22 +298,48 @@ export default function MatchSwiper({ matches = [], onClose }) {
           right: 0;
           display: flex;
           justify-content: center;
-          gap: 4px;
-          padding: 12px;
+          gap: 6px;
+          padding: 16px;
           z-index: 1002;
         }
         
         .progress-indicator {
-          height: 4px;
+          height: 6px;
           flex: 1;
-          max-width: 40px;
-          background-color: rgba(0, 0, 0, 0.1);
-          border-radius: 2px;
-          transition: background-color 0.3s ease;
+          max-width: 50px;
+          border-radius: 3px;
+          transition: all 0.3s ease;
+          cursor: pointer;
         }
         
         .progress-indicator.active {
-          background-color: var(--tg-theme-button-color, #2481cc);
+          background-color: #FF4D8D; /* Яркий розовый */
+          height: 8px;
+          box-shadow: 0 0 8px rgba(255, 77, 141, 0.6);
+          animation: pulse 1.5s infinite;
+        }
+        
+        .progress-indicator.passed {
+          background-color: #9C27B0; /* Фиолетовый */
+        }
+        
+        .progress-indicator.future {
+          background-color: rgba(0, 0, 0, 0.15);
+        }
+        
+        @keyframes pulse {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
         
         .close-button {
