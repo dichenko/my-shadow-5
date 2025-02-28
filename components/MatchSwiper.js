@@ -5,6 +5,10 @@ export default function MatchSwiper({ matches = [], onClose }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const cardRef = useRef(null);
   
+  // Добавляем состояния для обработки свайпа
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  
   // Функция для отображения текста ответа
   const getAnswerText = (answer) => {
     switch (answer) {
@@ -63,6 +67,61 @@ export default function MatchSwiper({ matches = [], onClose }) {
       document.head.removeChild(styleElement);
     };
   }, []);
+  
+  // Добавляем функцию для обработки свайпа
+  const handleSwipe = () => {
+    if (!touchStart || !touchEnd || isAnimating) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50; // Минимальное расстояние свайпа влево
+    const isRightSwipe = distance < -50; // Минимальное расстояние свайпа вправо
+    
+    if (isLeftSwipe && currentIndex < matches.length - 1) {
+      // Свайп влево - переход к следующей карточке
+      navigateToIndex(currentIndex + 1);
+    } else if (isRightSwipe && currentIndex > 0) {
+      // Свайп вправо - переход к предыдущей карточке
+      navigateToIndex(currentIndex - 1);
+    }
+  };
+  
+  // Функция для навигации к определенному индексу с анимацией
+  const navigateToIndex = (index) => {
+    if (isAnimating || index === currentIndex) return;
+    
+    setIsAnimating(true);
+    if (cardRef.current) {
+      if (index > currentIndex) {
+        cardRef.current.classList.add('swiping-left');
+      } else if (index < currentIndex) {
+        cardRef.current.classList.add('swiping-right');
+      }
+    }
+    
+    setTimeout(() => {
+      setCurrentIndex(index);
+      setTimeout(() => {
+        if (cardRef.current) {
+          cardRef.current.classList.remove('swiping-left', 'swiping-right');
+        }
+        setIsAnimating(false);
+      }, 300);
+    }, 100);
+  };
+  
+  // Обработчики событий касания
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+  
+  const onTouchEnd = () => {
+    handleSwipe();
+  };
   
   if (matches.length === 0) {
     return (
@@ -134,25 +193,8 @@ export default function MatchSwiper({ matches = [], onClose }) {
               onClick={() => {
                 if (isAnimating) return;
                 
-                // Добавляем анимацию при переключении индикаторов
-                setIsAnimating(true);
-                if (cardRef.current) {
-                  if (index > currentIndex) {
-                    cardRef.current.classList.add('swiping-left');
-                  } else if (index < currentIndex) {
-                    cardRef.current.classList.add('swiping-right');
-                  }
-                }
-                
-                setTimeout(() => {
-                  setCurrentIndex(index);
-                  setTimeout(() => {
-                    if (cardRef.current) {
-                      cardRef.current.classList.remove('swiping-left', 'swiping-right');
-                    }
-                    setIsAnimating(false);
-                  }, 300);
-                }, 100);
+                // Используем общую функцию для навигации
+                navigateToIndex(index);
               }}
               style={{
                 height: '4px',
@@ -176,7 +218,13 @@ export default function MatchSwiper({ matches = [], onClose }) {
           ))}
         </div>
         
-        <div className="match-card" ref={cardRef}>
+        <div 
+          className="match-card" 
+          ref={cardRef}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           <div className="match-question">
             {currentMatch.type === 'regular' ? (
               currentMatch.questionText
