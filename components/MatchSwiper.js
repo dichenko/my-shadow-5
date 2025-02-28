@@ -196,24 +196,6 @@ export default function MatchSwiper({ matches = [], onClose }) {
   
   const currentMatch = matches[currentIndex];
   
-  // Создаем массив индикаторов с разными цветами для пройденных, текущего и будущих
-  const indicators = Array.from({ length: matches.length }, (_, index) => {
-    let indicatorClass = 'future';
-    if (index === currentIndex) {
-      indicatorClass = 'active';
-    } else if (index < currentIndex) {
-      indicatorClass = 'passed';
-    }
-    
-    return (
-      <div 
-        key={index} 
-        className={`progress-indicator ${indicatorClass}`}
-        onClick={() => !isAnimating && setCurrentIndex(index)}
-      />
-    );
-  });
-  
   return (
     <div 
       className="match-swiper-container"
@@ -222,8 +204,40 @@ export default function MatchSwiper({ matches = [], onClose }) {
       onTouchEnd={onTouchEnd}
     >
       <div className="content-wrapper">
-        <div className="progress-indicators-container">
-          {indicators}
+        {/* Индикаторы прогресса */}
+        <div 
+          style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '6px',
+            marginBottom: '20px',
+            padding: '0 10px',
+            marginTop: '20px'
+          }}
+        >
+          {Array.from({ length: matches.length }).map((_, index) => (
+            <div
+              key={index}
+              onClick={() => !isAnimating && setCurrentIndex(index)}
+              style={{
+                height: index === currentIndex ? '16px' : '12px',
+                flex: 1,
+                maxWidth: '50px',
+                backgroundColor: 
+                  index === currentIndex 
+                    ? '#FF4D8D' 
+                    : index < currentIndex 
+                      ? '#9C27B0' 
+                      : 'rgba(0, 0, 0, 0.2)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: index === currentIndex ? '0 0 8px rgba(255, 77, 141, 0.6)' : 'none',
+                border: '1px solid rgba(0, 0, 0, 0.1)'
+              }}
+            />
+          ))}
         </div>
         
         <div className="match-card" ref={cardRef}>
@@ -290,39 +304,6 @@ export default function MatchSwiper({ matches = [], onClose }) {
           align-items: center;
           width: 100%;
           max-width: 500px;
-        }
-        
-        .progress-indicators-container {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          margin-bottom: 20px;
-          width: 100%;
-          padding: 0 10px;
-        }
-        
-        .progress-indicator {
-          height: 12px;
-          flex: 1;
-          border-radius: 3px;
-          transition: all 0.3s ease;
-          cursor: pointer;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        .progress-indicator.active {
-          background-color: #FF4D8D; /* Яркий розовый */
-          box-shadow: 0 0 8px rgba(255, 77, 141, 0.6);
-          height: 14px;
-          margin-top: -2px;
-        }
-        
-        .progress-indicator.passed {
-          background-color: #9C27B0; /* Фиолетовый */
-        }
-        
-        .progress-indicator.future {
-          background-color: rgba(0, 0, 0, 0.15);
         }
         
         .close-button {
