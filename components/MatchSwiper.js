@@ -179,13 +179,15 @@ export default function MatchSwiper({ matches = [], onClose }) {
           
           .close-button {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
+            bottom: 2rem;
             background: none;
             border: none;
             font-size: 1rem;
             color: var(--tg-theme-button-color, #2481cc);
             cursor: pointer;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
           }
         `}</style>
       </div>
@@ -219,19 +221,8 @@ export default function MatchSwiper({ matches = [], onClose }) {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <button className="close-button" onClick={onClose}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      
       <div className="progress-indicators-container">
         {indicators}
-      </div>
-      
-      <div className="match-counter">
-        {currentIndex + 1} / {matches.length}
       </div>
       
       <div className="match-card" ref={cardRef}>
@@ -271,9 +262,9 @@ export default function MatchSwiper({ matches = [], onClose }) {
         </div>
       </div>
       
-      <div className="swipe-hint">
-        <span>Свайпните для просмотра следующего совпадения</span>
-      </div>
+      <button className="close-button" onClick={onClose}>
+        Закрыть
+      </button>
       
       <style jsx>{`
         .match-swiper-container {
@@ -292,31 +283,26 @@ export default function MatchSwiper({ matches = [], onClose }) {
         }
         
         .progress-indicators-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
           display: flex;
           justify-content: center;
-          gap: 6px;
-          padding: 16px;
-          z-index: 1002;
+          gap: 8px;
+          margin-bottom: 20px;
+          width: 100%;
+          max-width: 500px;
+          padding: 0 10px;
         }
         
         .progress-indicator {
-          height: 6px;
+          height: 10px;
           flex: 1;
-          max-width: 50px;
-          border-radius: 3px;
+          border-radius: 2px;
           transition: all 0.3s ease;
           cursor: pointer;
         }
         
         .progress-indicator.active {
           background-color: #FF4D8D; /* Яркий розовый */
-          height: 8px;
           box-shadow: 0 0 8px rgba(255, 77, 141, 0.6);
-          animation: pulse 1.5s infinite;
         }
         
         .progress-indicator.passed {
@@ -327,38 +313,17 @@ export default function MatchSwiper({ matches = [], onClose }) {
           background-color: rgba(0, 0, 0, 0.15);
         }
         
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.05);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        
         .close-button {
           position: absolute;
-          top: 1rem;
-          left: 1rem;
+          bottom: 2rem;
           background: none;
           border: none;
+          font-size: 1rem;
+          color: var(--tg-theme-button-color, #2481cc);
           cursor: pointer;
-          color: var(--tg-theme-hint-color);
-          z-index: 1001;
-        }
-        
-        .match-counter {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          font-size: 0.9rem;
-          color: var(--tg-theme-hint-color);
+          padding: 0.5rem 1.5rem;
+          border-radius: 20px;
+          background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
         }
         
         .match-card {
@@ -406,13 +371,6 @@ export default function MatchSwiper({ matches = [], onClose }) {
         
         .partner-answer, .partner-role {
           color: #9c27b0;
-        }
-        
-        .swipe-hint {
-          margin-top: 2rem;
-          font-size: 0.8rem;
-          color: var(--tg-theme-hint-color);
-          text-align: center;
         }
       `}</style>
     </div>
