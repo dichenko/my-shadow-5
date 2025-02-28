@@ -238,22 +238,19 @@ export default function MatchSwiper({ matches = [], onClose }) {
           </div>
           
           <div className="match-info">
-            {currentMatch.type === 'regular' ? (
+            {/* Проверяем совпадение ответов для всех типов карточек */}
+            {currentMatch.userAnswer === 'yes' && currentMatch.partnerAnswer === 'yes' ? (
+              <div className="match-special-message">
+                <span>Вы оба этого хотите! Не стоит откладывать ❤️</span>
+              </div>
+            ) : currentMatch.userAnswer === 'maybe' && currentMatch.partnerAnswer === 'maybe' ? (
+              <div className="match-special-message">
+                <span>Вы оба сомневаетесь. Обсудите это вместе!</span>
+              </div>
+            ) : currentMatch.type === 'regular' ? (
               <div className="match-regular-info">
-                {currentMatch.userAnswer === 'yes' && currentMatch.partnerAnswer === 'yes' ? (
-                  <div className="match-special-message">
-                    <span>Вы оба этого хотите! Не стоит откладывать ❤️</span>
-                  </div>
-                ) : currentMatch.userAnswer === 'maybe' && currentMatch.partnerAnswer === 'maybe' ? (
-                  <div className="match-special-message">
-                    <span>Вы оба сомневаетесь. Обсудите это вместе!</span>
-                  </div>
-                ) : (
-                  <>
-                    <span className="user-answer">{getAnswerText(currentMatch.userAnswer)}</span>
-                    <span className="partner-answer">{getAnswerText(currentMatch.partnerAnswer)}</span>
-                  </>
-                )}
+                <span className="user-answer">{getAnswerText(currentMatch.userAnswer)}</span>
+                <span className="partner-answer">{getAnswerText(currentMatch.partnerAnswer)}</span>
               </div>
             ) : (
               <div className="match-role-info">
