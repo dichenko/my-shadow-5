@@ -11,7 +11,9 @@ export default function Settings() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showAccountDeleteConfirmation, setShowAccountDeleteConfirmation] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
@@ -77,6 +79,49 @@ export default function Settings() {
     }
   };
 
+  // Функция для удаления аккаунта пользователя
+  const deleteAccount = async () => {
+    if (!user) {
+      setError('Пользователь не авторизован');
+      return;
+    }
+
+    try {
+      setIsDeletingAccount(true);
+      setError(null);
+      setMessage(null);
+
+      const response = await fetch('/api/delete-account', {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось удалить аккаунт');
+      }
+
+      setMessage(data.message || 'Ваш аккаунт успешно удален');
+      setShowAccountDeleteConfirmation(false);
+      
+      // Закрываем Telegram WebApp через 2 секунды
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
+          window.Telegram.WebApp.close();
+        } else {
+          // Если не в Telegram, перенаправляем на главную
+          router.push('/');
+        }
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Ошибка при удалении аккаунта:', err);
+      setError(err.message || 'Не удалось удалить аккаунт. Пожалуйста, попробуйте еще раз.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   return (
     <div className="container">
       <Head>
@@ -130,6 +175,40 @@ export default function Settings() {
               </div>
             )}
           </div>
+          
+          <div className="settings-section danger-section">
+            <h2 className="section-title">Удаление аккаунта</h2>
+            
+            {!showAccountDeleteConfirmation ? (
+              <button 
+                className="delete-account-btn"
+                onClick={() => setShowAccountDeleteConfirmation(true)}
+                disabled={isDeletingAccount || !user}
+              >
+                Удалить аккаунт
+              </button>
+            ) : (
+              <div className="confirmation-box danger">
+                <p className="confirmation-text">Это необратимое действие, все ваши данные будут удалены из приложения. Если у вас есть партнер в приложении, он получит сообщение, что вы удалили свой профиль из MyShadow.</p>
+                <div className="confirmation-buttons">
+                  <button 
+                    className="confirm-btn"
+                    onClick={deleteAccount}
+                    disabled={isDeletingAccount}
+                  >
+                    {isDeletingAccount ? 'Удаление...' : 'Да, удалить аккаунт'}
+                  </button>
+                  <button 
+                    className="cancel-btn"
+                    onClick={() => setShowAccountDeleteConfirmation(false)}
+                    disabled={isDeletingAccount}
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
@@ -171,13 +250,18 @@ export default function Settings() {
           border-radius: 12px;
         }
         
+        .danger-section {
+          background-color: rgba(255, 59, 48, 0.05);
+          border: 1px solid rgba(255, 59, 48, 0.2);
+        }
+        
         .section-title {
           font-size: 1.2rem;
           margin-top: 0;
           margin-bottom: 1.5rem;
         }
         
-        .clear-answers-btn {
+        .clear-answers-btn, .delete-account-btn {
           width: 100%;
           padding: 0.8rem;
           background-color: var(--tg-theme-destructive-text-color, #ff3b30);
@@ -189,7 +273,11 @@ export default function Settings() {
           transition: opacity 0.2s;
         }
         
-        .clear-answers-btn:disabled {
+        .delete-account-btn {
+          background-color: var(--tg-theme-destructive-text-color, #ff3b30);
+        }
+        
+        .clear-answers-btn:disabled, .delete-account-btn:disabled {
           opacity: 0.7;
           cursor: not-allowed;
         }
@@ -198,6 +286,11 @@ export default function Settings() {
           background-color: rgba(255, 59, 48, 0.1);
           padding: 1rem;
           border-radius: 8px;
+          border: 1px solid var(--tg-theme-destructive-text-color, #ff3b30);
+        }
+        
+        .confirmation-box.danger {
+          background-color: rgba(255, 59, 48, 0.15);
           border: 1px solid var(--tg-theme-destructive-text-color, #ff3b30);
         }
         
