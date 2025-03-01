@@ -39,7 +39,9 @@ export default function Login() {
             // Если в localStorage есть adminToken, используем его как Bearer
             ...(localStorage.getItem('adminToken') && {
               'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-            })
+            }),
+            // Добавляем заголовок для обхода проверки пользователя Telegram
+            'X-Admin-Panel': 'true'
           }
         });
         
@@ -96,6 +98,8 @@ export default function Login() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Добавляем заголовок для обхода проверки пользователя Telegram
+          'X-Admin-Panel': 'true'
         },
         credentials: 'include', // Важно для сохранения cookie
         body: JSON.stringify({ username, password }),
@@ -117,7 +121,11 @@ export default function Login() {
       
       // Дополнительная проверка авторизации после входа
       const checkResult = await fetch('/api/admin/check', { 
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          // Добавляем заголовок для обхода проверки пользователя Telegram
+          'X-Admin-Panel': 'true'
+        }
       });
       const checkData = await checkResult.json();
       console.log('Проверка после входа:', checkData);

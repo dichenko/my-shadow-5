@@ -17,6 +17,10 @@ export default async function handler(req, res) {
   try {
     console.log('Проверка авторизации администратора');
     
+    // Проверяем заголовок X-Admin-Panel
+    const isAdminPanel = req.headers['x-admin-panel'] === 'true';
+    console.log('Заголовок X-Admin-Panel:', isAdminPanel);
+    
     // Получаем cookie из запроса для логирования
     const cookieHeader = req.headers.cookie || '';
     console.log('Заголовок Cookie:', cookieHeader);

@@ -74,6 +74,10 @@ export async function checkAuth(req, res) {
  */
 export async function checkAdminAuth(req) {
   try {
+    // Проверяем заголовок X-Admin-Panel
+    const isAdminPanel = req.headers['x-admin-panel'] === 'true';
+    console.log('Заголовок X-Admin-Panel:', isAdminPanel);
+    
     // Получаем cookie из запроса
     const cookieHeader = req.headers.cookie || '';
     console.log('Проверка авторизации администратора. Заголовок Cookie:', cookieHeader);
@@ -93,6 +97,22 @@ export async function checkAdminAuth(req) {
     if (!process.env.ADMIN_PASSWORD) {
       console.error('КРИТИЧЕСКАЯ ОШИБКА: ADMIN_PASSWORD не установлен в переменных окружения');
       return false;
+    }
+    
+    // Если запрос идет от админ-панели и есть заголовок авторизации, проверяем его
+    if (isAdminPanel && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        console.log('Найден Bearer token в запросе от админ-панели, длина:', token.length);
+        console.log('Первые 5 символов Bearer token:', token.substring(0, 5));
+        console.log('Совпадение Bearer token с ADMIN_PASSWORD:', token === process.env.ADMIN_PASSWORD);
+        
+        if (token === process.env.ADMIN_PASSWORD) {
+          console.log('Успешная авторизация через Bearer token от админ-панели');
+          return true;
+        }
+      }
     }
     
     if (!cookieHeader) {

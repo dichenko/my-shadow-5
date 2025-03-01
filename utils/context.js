@@ -16,6 +16,18 @@ export function UserProvider({ children }) {
       try {
         console.log('Начало загрузки данных пользователя');
         
+        // Проверяем, является ли текущая страница админ-панелью
+        const isAdminPage = typeof window !== 'undefined' && 
+          (window.location.pathname.startsWith('/admin') || 
+           window.location.href.includes('/admin'));
+        
+        // Если это админ-панель, пропускаем проверку пользователя Telegram
+        if (isAdminPage) {
+          console.log('Обнаружена админ-панель, пропускаем проверку пользователя Telegram');
+          setLoading(false);
+          return;
+        }
+        
         // Получаем данные пользователя из Telegram WebApp
         const telegramUser = getTelegramUser();
         

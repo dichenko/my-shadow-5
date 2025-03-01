@@ -61,7 +61,9 @@ export default function Admin() {
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
-            'Expires': '0'
+            'Expires': '0',
+            // Добавляем заголовок для обхода проверки пользователя Telegram
+            'X-Admin-Panel': 'true'
           }
         });
         
