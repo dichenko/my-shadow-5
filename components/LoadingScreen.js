@@ -65,7 +65,7 @@ export default function LoadingScreen({ timeout = 5000 }) {
           font-size: 2.5rem;
           font-weight: bold;
           margin-bottom: 2rem;
-          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
+          background: linear-gradient(90deg, var(--purple-500), var(--purple-700));
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -106,7 +106,7 @@ export default function LoadingScreen({ timeout = 5000 }) {
         }
         
         .telegram-button {
-          background-color: var(--tg-theme-button-color, #2481cc);
+          background-color: var(--tg-theme-button-color, var(--app-primary));
           color: var(--tg-theme-button-text-color, #ffffff);
           border: none;
           border-radius: 8px;
@@ -119,7 +119,7 @@ export default function LoadingScreen({ timeout = 5000 }) {
         }
         
         .telegram-button:hover {
-          background-color: var(--tg-theme-button-color, #1a6baa);
+          background-color: var(--tg-theme-button-color, var(--app-primary-dark));
         }
       `}</style>
     </div>

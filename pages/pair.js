@@ -201,11 +201,11 @@ export default function Pair() {
 
   // Массив градиентов для блоков в минималистичном стиле
   const gradients = [
-    'linear-gradient(135deg, #E0E0E0 0%, #F5F5F5 100%)',
-    'linear-gradient(135deg, #D4D4D4 0%, #E8E8E8 100%)',
-    'linear-gradient(135deg, #CCCCCC 0%, #E0E0E0 100%)',
-    'linear-gradient(135deg, #C4C4C4 0%, #D8D8D8 100%)',
-    'linear-gradient(135deg, #BCBCBC 0%, #D0D0D0 100%)'
+    'linear-gradient(135deg, var(--purple-50) 0%, var(--purple-100) 100%)',
+    'linear-gradient(135deg, var(--purple-100) 0%, var(--purple-200) 100%)',
+    'linear-gradient(135deg, var(--purple-200) 0%, var(--purple-300) 100%)',
+    'linear-gradient(135deg, var(--purple-300) 0%, var(--purple-400) 100%)',
+    'linear-gradient(135deg, var(--purple-400) 0%, var(--purple-500) 100%)'
   ];
 
   return (
@@ -443,9 +443,10 @@ export default function Pair() {
         }
         
         .pair-code-section, .partner-code-section {
-          background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+          background-color: var(--tg-theme-secondary-bg-color, var(--purple-50));
           padding: 1.5rem;
           border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
         
         .code-container {
@@ -461,14 +462,15 @@ export default function Pair() {
           font-weight: bold;
           letter-spacing: 1px;
           padding: 0.5rem 1rem;
-          background-color: var(--tg-theme-bg-color, #ffffff);
+          background-color: var(--tg-theme-bg-color, var(--app-surface));
           border-radius: 6px;
           flex: 1;
           text-align: center;
+          border: 1px solid var(--purple-200);
         }
         
         .copy-button {
-          background-color: var(--tg-theme-button-color, #2481cc);
+          background-color: var(--tg-theme-button-color, var(--app-primary));
           color: var(--tg-theme-button-text-color, #ffffff);
           border: none;
           border-radius: 6px;
@@ -493,7 +495,7 @@ export default function Pair() {
         .copy-button:focus,
         .copy-button:hover,
         .copy-button.success {
-          background-color: #4caf50;
+          background-color: var(--app-success, #4caf50);
           transform: translateY(0) scale(1) !important;
           top: 0;
           margin: 0;
@@ -523,7 +525,7 @@ export default function Pair() {
         }
         
         .create-button {
-          background-color: var(--tg-theme-button-color, #2481cc);
+          background-color: var(--tg-theme-button-color, var(--app-primary));
           color: var(--tg-theme-button-text-color, #ffffff);
           border: none;
           border-radius: 6px;
@@ -555,7 +557,7 @@ export default function Pair() {
           justify-content: space-between;
           align-items: center;
           padding: 0.75rem 1rem;
-          background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+          background-color: var(--tg-theme-secondary-bg-color, var(--purple-100));
           cursor: pointer;
           user-select: none;
         }
@@ -580,13 +582,13 @@ export default function Pair() {
         
         .pair-status-content {
           padding: 1rem;
-          background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+          background-color: var(--tg-theme-secondary-bg-color, var(--purple-50));
           border-top: 1px solid rgba(0, 0, 0, 0.05);
         }
         
         .delete-button {
           width: 100%;
-          background-color: #d32f2f;
+          background-color: var(--app-error, #d32f2f);
           color: white;
           border: none;
           border-radius: 6px;
@@ -627,12 +629,12 @@ export default function Pair() {
         }
         
         .confirm-yes {
-          background-color: #d32f2f;
+          background-color: var(--app-error, #d32f2f);
           color: white;
         }
         
         .confirm-no {
-          background-color: var(--tg-theme-button-color, #2481cc);
+          background-color: var(--tg-theme-button-color, var(--app-primary));
           color: var(--tg-theme-button-text-color, #ffffff);
         }
         
@@ -644,7 +646,7 @@ export default function Pair() {
           text-align: center;
           padding: 2rem;
           color: var(--tg-theme-hint-color, #999999);
-          background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+          background-color: var(--tg-theme-secondary-bg-color, var(--purple-50));
           border-radius: 12px;
         }
         

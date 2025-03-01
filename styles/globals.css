@@ -1,6 +1,7 @@
 /* Глобальные стили для приложения */
 
 :root {
+  /* Основные цвета Telegram WebApp */
   --tg-theme-bg-color: #ffffff;
   --tg-theme-text-color: #000000;
   --tg-theme-hint-color: #999999;
@@ -9,6 +10,31 @@
   --tg-theme-button-text-color: #ffffff;
   --tg-theme-secondary-bg-color: #f5f5f5;
   --tg-theme-destructive-text-color: #ff0000;
+  
+  /* Новая фиолетовая палитра из Tailwind */
+  --purple-50: #faf5ff;
+  --purple-100: #f3e8ff;
+  --purple-200: #e9d5ff;
+  --purple-300: #d8b4fe;
+  --purple-400: #c084fc;
+  --purple-500: #a855f7;
+  --purple-600: #9333ea;
+  --purple-700: #7e22ce;
+  --purple-800: #6b21a8;
+  --purple-900: #581c87;
+  --purple-950: #3b0764;
+  
+  /* Обновленные цвета приложения с использованием фиолетовой палитры */
+  --app-primary: var(--purple-600);
+  --app-primary-light: var(--purple-400);
+  --app-primary-dark: var(--purple-800);
+  --app-secondary: var(--purple-200);
+  --app-accent: var(--purple-500);
+  --app-background: var(--purple-50);
+  --app-surface: #ffffff;
+  --app-error: #ff3b30;
+  --app-success: #34c759;
+  --app-warning: #ffcc00;
 }
 
 * {
@@ -26,13 +52,13 @@ body {
 }
 
 body {
-  background-color: var(--tg-theme-bg-color, #ffffff);
+  background-color: var(--tg-theme-bg-color, var(--app-background));
   color: var(--tg-theme-text-color, #000000);
   touch-action: pan-y; /* Разрешаем только вертикальный скролл, горизонтальные свайпы обрабатываем сами */
 }
 
 a {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tg-theme-link-color, var(--app-primary));
   text-decoration: none;
 }
 
@@ -79,5 +105,14 @@ button {
     --tg-theme-button-text-color: #ffffff;
     --tg-theme-secondary-bg-color: #333333;
     --tg-theme-destructive-text-color: #ff6b6b;
+    
+    /* Обновленные цвета для темной темы */
+    --app-primary: var(--purple-400);
+    --app-primary-light: var(--purple-300);
+    --app-primary-dark: var(--purple-600);
+    --app-secondary: var(--purple-800);
+    --app-accent: var(--purple-500);
+    --app-background: #1a1a1a;
+    --app-surface: #2d2d2d;
   }
 } 

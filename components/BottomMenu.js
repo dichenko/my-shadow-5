@@ -170,16 +170,16 @@ export default function BottomMenu({ activePage = 'questions' }) {
           }
           
           .menu-item.active {
-            color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-color, var(--app-primary));
           }
           
           .menu-item.active .icon-container {
-            box-shadow: 0 4px 10px rgba(36, 129, 204, 0.3);
+            box-shadow: 0 4px 10px rgba(147, 51, 234, 0.3);
           }
           
           .menu-item.active svg {
             stroke-width: 2.5;
-            filter: drop-shadow(0 2px 4px rgba(36, 129, 204, 0.3));
+            filter: drop-shadow(0 2px 4px rgba(147, 51, 234, 0.3));
           }
           
           .menu-item.prev-active {
@@ -188,7 +188,7 @@ export default function BottomMenu({ activePage = 'questions' }) {
           
           @keyframes fadeOut {
             from {
-              color: var(--tg-theme-button-color, #2481cc);
+              color: var(--tg-theme-button-color, var(--app-primary));
             }
             to {
               color: var(--tg-theme-hint-color, #999999);

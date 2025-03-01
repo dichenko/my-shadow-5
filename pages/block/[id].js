@@ -588,7 +588,7 @@ export default function BlockQuestions() {
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
-              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(240,240,240,0.6) 100%)' }}
+              style={{ background: 'linear-gradient(135deg, rgba(250, 245, 255, 0.8) 0%, rgba(243, 232, 255, 0.6) 100%)' }}
             >
               <div className="question-text-container">
                 <p className="question-text">{currentQuestion.text}</p>
@@ -685,14 +685,14 @@ export default function BlockQuestions() {
         }
         
         .progress-indicator.active {
-          background: linear-gradient(90deg, #FF6B6B, #FF4D8D);
+          background: linear-gradient(90deg, var(--purple-500), var(--purple-600));
           opacity: 1;
           transform: scaleY(1.2);
-          box-shadow: 0 1px 3px rgba(255, 77, 141, 0.3);
+          box-shadow: 0 1px 3px rgba(168, 85, 247, 0.3);
         }
         
         .progress-indicator.completed {
-          background: linear-gradient(90deg, #8A2BE2, #9C27B0);
+          background: linear-gradient(90deg, var(--purple-700), var(--purple-800));
           opacity: 0.8;
         }
         
@@ -737,9 +737,9 @@ export default function BlockQuestions() {
           justify-content: center;
           align-items: center;
           will-change: transform, opacity; /* Оптимизация для анимаций */
-          background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(240,240,240,0.6) 100%);
+          background: linear-gradient(135deg, rgba(250, 245, 255, 0.8) 0%, rgba(243, 232, 255, 0.6) 100%);
           backdrop-filter: blur(5px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          border: 1px solid rgba(233, 213, 255, 0.3);
         }
         
         .question-text-container {
@@ -792,26 +792,26 @@ export default function BlockQuestions() {
         }
         
         .btn-want {
-          background-color: #4CAF50;
+          background-color: var(--purple-600);
           color: white;
           font-size: 1.2rem;
           flex: 1;
         }
         
         .btn-dont-want {
-          background-color: #F44336;
+          background-color: var(--app-error, #F44336);
           color: white;
           font-size: 1.2rem;
           flex: 1;
         }
         
         .btn-maybe {
-          background-color: rgba(200, 200, 200, 0.3);
+          background-color: rgba(233, 213, 255, 0.3);
           color: var(--tg-theme-hint-color, #999999);
           font-size: 0.9rem;
           font-weight: normal;
           padding: 0.6rem 1.5rem;
-          border: 1px solid rgba(200, 200, 200, 0.5);
+          border: 1px solid rgba(233, 213, 255, 0.5);
         }
         
         .fade-out {
