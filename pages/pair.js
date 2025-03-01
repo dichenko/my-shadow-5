@@ -481,10 +481,25 @@ export default function Pair() {
           justify-content: center;
           width: 40px;
           height: 40px;
+          position: relative;
+          margin: 0;
+          transform: translateY(0);
+          box-shadow: none;
+          transform-origin: center center;
+          will-change: background-color;
         }
         
+        .copy-button:active,
+        .copy-button:focus,
+        .copy-button:hover,
         .copy-button.success {
           background-color: #4caf50;
+          transform: translateY(0) scale(1) !important;
+          top: 0;
+          margin: 0;
+          outline: none;
+          box-shadow: none;
+          position: relative;
         }
         
         .code-info {
