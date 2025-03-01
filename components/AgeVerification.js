@@ -51,7 +51,8 @@ export default function AgeVerification({ user, onVerified }) {
   // Обработчик подтверждения возраста
   const handleAgeConfirm = async () => {
     if (!user || !user.id) {
-      setConfirmError('Ошибка: данные пользователя не доступны');
+      // Если нет ID пользователя, просто принимаем подтверждение
+      onVerified();
       return;
     }
     
@@ -59,7 +60,7 @@ export default function AgeVerification({ user, onVerified }) {
     setConfirmError(null);
     
     try {
-      // Сохраняем информацию о подтверждении возраста
+      // Пытаемся сохранить информацию о подтверждении возраста
       const response = await fetch('/api/confirm-age', {
         method: 'POST',
         headers: {
@@ -70,16 +71,12 @@ export default function AgeVerification({ user, onVerified }) {
         }),
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Ошибка при подтверждении возраста');
-      }
-      
-      // Пользователь подтвердил что ему 18+
+      // Независимо от результата запроса, принимаем подтверждение пользователя
       onVerified();
     } catch (error) {
       console.error('Ошибка при подтверждении возраста:', error);
-      setConfirmError(error.message || 'Произошла ошибка при подтверждении');
+      // Даже при ошибке принимаем подтверждение пользователя
+      onVerified();
     } finally {
       setIsConfirming(false);
     }
