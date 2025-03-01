@@ -485,7 +485,7 @@ export default function Pair() {
           height: 40px;
           position: relative;
           margin: 0;
-          transform: translateY(0);
+          transform: none !important;
           box-shadow: none;
           transform-origin: center center;
           will-change: background-color;
@@ -496,9 +496,9 @@ export default function Pair() {
         .copy-button:hover,
         .copy-button.success {
           background-color: var(--app-success, #4caf50);
-          transform: translateY(0) scale(1) !important;
-          top: 0;
-          margin: 0;
+          transform: none !important;
+          top: 0 !important;
+          margin: 0 !important;
           outline: none;
           box-shadow: none;
           position: relative;
