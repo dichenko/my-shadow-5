@@ -21,13 +21,29 @@ export default async function handler(req, res) {
     eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
 
     try {
+      // Получаем текущие данные пользователя
+      const currentUser = await prisma.telegramUser.findUnique({
+        where: {
+          id: parseInt(userId, 10)
+        }
+      });
+
+      if (!currentUser) {
+        return res.status(200).json({
+          success: true,
+          message: 'Пользователь не найден, возраст подтвержден без сохранения'
+        });
+      }
+
       // Обновляем пользователя в базе данных
       const user = await prisma.telegramUser.update({
         where: {
           id: parseInt(userId, 10)
         },
         data: {
-          birthdate: eighteenYearsAgo
+          birthdate: eighteenYearsAgo,
+          // Убедимся, что visitCount больше 1, чтобы в будущем пропускать проверку
+          visitCount: Math.max(currentUser.visitCount, 2)
         }
       });
 
