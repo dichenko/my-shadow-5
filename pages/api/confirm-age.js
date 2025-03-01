@@ -42,8 +42,8 @@ export default async function handler(req, res) {
         },
         data: {
           birthdate: eighteenYearsAgo,
-          // Убедимся, что visitCount больше 1, чтобы в будущем пропускать проверку
-          visitCount: Math.max(currentUser.visitCount, 2)
+          // Убедимся, что visitCount больше 0, чтобы в будущем пропускать проверку
+          visitCount: Math.max(currentUser.visitCount, 1)
         }
       });
 

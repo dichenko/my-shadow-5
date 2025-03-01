@@ -43,7 +43,7 @@ export default function AgeVerification({ user, onVerified }) {
         }
       } else {
         // Проверяем, новый ли это пользователь (первый визит)
-        if (user.visitCount && user.visitCount > 1) {
+        if (user.visitCount && user.visitCount > 0) {
           // Это существующий пользователь, который уже посещал приложение
           // Считаем, что он уже подтвердил возраст, поэтому пропускаем проверку
           console.log('Пользователь уже посещал приложение, пропускаем проверку возраста');
