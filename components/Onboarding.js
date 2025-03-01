@@ -161,9 +161,9 @@ export default function Onboarding({ onComplete }) {
           height: 100%;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           align-items: center;
-          padding: 0;
+          padding-top: 25vh;
           opacity: 0;
           transform: translateX(100%);
           transition: transform 0.5s ease, opacity 0.5s ease;
@@ -189,7 +189,7 @@ export default function Onboarding({ onComplete }) {
         
         .slide-content {
           width: 90%;
-          height: 90vh;
+          height: 70vh;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -243,7 +243,7 @@ export default function Onboarding({ onComplete }) {
           gap: 0.5rem;
           z-index: 100;
           position: absolute;
-          bottom: 20px;
+          bottom: 5vh;
           left: 0;
           right: 0;
           padding: 10px 0;
