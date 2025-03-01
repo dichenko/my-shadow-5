@@ -166,7 +166,7 @@ export default function Onboarding({ onComplete }) {
           left: 0;
           width: 100%;
           height: 100%;
-          background-color: var(--tg-theme-bg-color, #ffffff);
+          background-color: var(--purple-200, #e9d5ff);
           z-index: 1000;
           display: flex;
           flex-direction: column;
@@ -221,6 +221,13 @@ export default function Onboarding({ onComplete }) {
           flex-direction: column;
           align-items: center;
           text-align: center;
+          background-color: rgba(255, 255, 255, 0.9);
+          border-radius: 20px;
+          padding: 2rem;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          backdrop-filter: blur(5px);
+          max-width: 90%;
         }
         
         .slide-title {
@@ -243,6 +250,7 @@ export default function Onboarding({ onComplete }) {
           margin: 2rem 0;
           display: flex;
           justify-content: center;
+          filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
         }
         
         .slide-footer {
@@ -256,19 +264,22 @@ export default function Onboarding({ onComplete }) {
           justify-content: center;
           margin-bottom: 2rem;
           gap: 0.5rem;
+          z-index: 10;
+          position: relative;
         }
         
         .dot {
           width: 10px;
           height: 10px;
           border-radius: 50%;
-          background-color: var(--tg-theme-hint-color, #999999);
+          background-color: rgba(255, 255, 255, 0.6);
           cursor: pointer;
           transition: background-color 0.3s ease, transform 0.3s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         .dot.active {
-          background-color: var(--purple-600);
+          background-color: white;
           transform: scale(1.2);
         }
         
@@ -283,6 +294,7 @@ export default function Onboarding({ onComplete }) {
           border-radius: 8px;
           cursor: pointer;
           transition: background-color 0.3s ease, transform 0.3s ease;
+          box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
         }
         
         .start-button:hover, .start-button:active {
@@ -297,7 +309,8 @@ export default function Onboarding({ onComplete }) {
           padding: 1.5rem;
           background: linear-gradient(135deg, var(--purple-50) 0%, var(--purple-100) 100%);
           border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.8);
         }
         
         .question-text {
@@ -318,6 +331,7 @@ export default function Onboarding({ onComplete }) {
           border-radius: 8px;
           font-weight: bold;
           cursor: pointer;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
         .btn-yes {
@@ -353,6 +367,7 @@ export default function Onboarding({ onComplete }) {
           font-size: 1.2rem;
           font-weight: bold;
           text-align: center;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
         
         .copy-button-demo {
@@ -366,6 +381,7 @@ export default function Onboarding({ onComplete }) {
           border: none;
           border-radius: 8px;
           cursor: pointer;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
         .matches-demo {
@@ -382,7 +398,8 @@ export default function Onboarding({ onComplete }) {
           border-radius: 12px;
           font-weight: 500;
           text-align: center;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.6);
         }
       `}</style>
     </div>
