@@ -7,7 +7,28 @@ export function getTelegramUser() {
       const webApp = window.Telegram.WebApp;
       
       if (webApp.initDataUnsafe && webApp.initDataUnsafe.user) {
-        return webApp.initDataUnsafe.user;
+        // Возвращаем данные пользователя из Telegram WebApp
+        const userData = webApp.initDataUnsafe.user;
+        
+        // Попытка получить дополнительные данные о пользователе, включая дату рождения
+        try {
+          // Попытка получить дополнительные данные из контекста, если они есть
+          if (webApp.initDataUnsafe && webApp.initDataUnsafe.auth_date) {
+            // Запрашиваем дополнительные данные через TelegramGameProxy, если доступен
+            if (typeof TelegramGameProxy !== 'undefined') {
+              TelegramGameProxy.getBirthdate && TelegramGameProxy.getBirthdate((birthdate) => {
+                if (birthdate) {
+                  console.log('Получена дата рождения из TelegramGameProxy:', birthdate);
+                  userData.birthdate = birthdate;
+                }
+              });
+            }
+          }
+        } catch (additionalDataError) {
+          console.error('Ошибка при получении дополнительных данных:', additionalDataError);
+        }
+        
+        return userData;
       }
     }
     
@@ -19,6 +40,9 @@ export function getTelegramUser() {
         last_name: 'User',
         username: 'testuser',
         language_code: 'ru',
+        // Для отладки проверки возраста, добавим дату рождения
+        // В production это значение не будет использоваться
+        birthdate: new Date('2000-01-01'),
         _debug: true
       };
     }

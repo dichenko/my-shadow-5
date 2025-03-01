@@ -26,6 +26,25 @@ export default async function handler(req, res) {
     
     console.log('Получены данные пользователя:', userData);
     
+    // Обработка информации о дате рождения
+    let birthdate = null;
+    if (userData.birthdate) {
+      try {
+        // Преобразуем строку или объект даты в объект Date
+        birthdate = new Date(userData.birthdate);
+        console.log('Получена дата рождения:', birthdate);
+        
+        // Проверка валидности даты
+        if (isNaN(birthdate.getTime())) {
+          console.error('Неверный формат даты рождения:', userData.birthdate);
+          birthdate = null;
+        }
+      } catch (dateError) {
+        console.error('Ошибка при обработке даты рождения:', dateError);
+        birthdate = null;
+      }
+    }
+    
     // Проверяем, существует ли пользователь с таким Telegram ID
     const existingUser = await prisma.telegramUser.findUnique({
       where: {
@@ -37,27 +56,45 @@ export default async function handler(req, res) {
     
     if (existingUser) {
       console.log('Найден существующий пользователь:', existingUser);
+      
+      // Подготовка данных для обновления
+      const updateData = {
+        lastVisit: new Date(),
+        visitCount: existingUser.visitCount + 1
+      };
+      
+      // Добавляем дату рождения в обновление, если она определена
+      if (birthdate !== null) {
+        updateData.birthdate = birthdate;
+      }
+      
       // Обновляем существующего пользователя
       user = await prisma.telegramUser.update({
         where: {
           id: existingUser.id
         },
-        data: {
-          lastVisit: new Date(),
-          visitCount: existingUser.visitCount + 1
-        }
+        data: updateData
       })
     } else {
       console.log('Создаем нового пользователя с tgId:', userData.id);
+      
+      // Подготовка данных для создания
+      const createData = {
+        tgId: userData.id,
+        firstVisit: new Date(),
+        lastVisit: new Date(),
+        visitCount: 1
+      };
+      
+      // Добавляем дату рождения при создании, если она определена
+      if (birthdate !== null) {
+        createData.birthdate = birthdate;
+      }
+      
       try {
         // Создаем нового пользователя
         user = await prisma.telegramUser.create({
-          data: {
-            tgId: userData.id,
-            firstVisit: new Date(),
-            lastVisit: new Date(),
-            visitCount: 1
-          }
+          data: createData
         })
         console.log('Создан новый пользователь:', user);
       } catch (createError) {

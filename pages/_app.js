@@ -5,6 +5,7 @@ import SwipeHandler from '../components/SwipeHandler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from '../components/ErrorBoundary';
 import LoadingScreen from '../components/LoadingScreen';
+import AgeVerification from '../components/AgeVerification';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -41,10 +42,11 @@ function AppWithLoading({ Component, pageProps }) {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const [isContentReady, setIsContentReady] = useState(false);
+  const [isAgeVerified, setIsAgeVerified] = useState(false);
   
   // Отслеживаем загрузку данных пользователя
   useEffect(() => {
-    if (!userLoading && user) {
+    if (!userLoading && user && isAgeVerified) {
       const timer = setTimeout(() => {
         setIsContentReady(true);
         
@@ -68,14 +70,32 @@ function AppWithLoading({ Component, pageProps }) {
       
       return () => clearTimeout(timer);
     }
-  }, [userLoading, user, router]);
+  }, [userLoading, user, router, isAgeVerified]);
   
-  // Показываем загрузочный экран, если данные еще не готовы
+  // Показываем загрузочный экран, если данные еще не загружены
+  if (userLoading) {
+    return <LoadingScreen timeout={10000} />;
+  }
+  
+  // Когда данные пользователя загружены, но не прошла проверка возраста
+  if (!userLoading && user && !isAgeVerified) {
+    return (
+      <AgeVerification 
+        user={user} 
+        onVerified={() => {
+          console.log('Возраст подтвержден');
+          setIsAgeVerified(true);
+        }} 
+      />
+    );
+  }
+  
+  // Показываем загрузочный экран, если данные еще не готовы после проверки возраста
   if (!isContentReady) {
     return <LoadingScreen timeout={10000} />;
   }
   
-  // Рендерим контент приложения, когда все данные готовы
+  // Рендерим контент приложения, когда все данные готовы и возраст подтвержден
   return (
     <SwipeHandler>
       <Component {...pageProps} />
