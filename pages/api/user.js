@@ -63,6 +63,11 @@ export default async function handler(req, res) {
         visitCount: existingUser.visitCount + 1
       };
       
+      console.log('Обновление счетчика посещений:', {
+        текущий: existingUser.visitCount,
+        новый: existingUser.visitCount + 1
+      });
+      
       // Добавляем дату рождения в обновление, если она определена
       if (birthdate !== null) {
         updateData.birthdate = birthdate;
@@ -75,6 +80,12 @@ export default async function handler(req, res) {
         },
         data: updateData
       })
+      
+      console.log('Пользователь успешно обновлен:', {
+        id: user.id,
+        visitCount: user.visitCount,
+        lastVisit: user.lastVisit
+      });
     } else {
       console.log('Создаем нового пользователя с tgId:', userData.id);
       
@@ -85,6 +96,8 @@ export default async function handler(req, res) {
         lastVisit: new Date(),
         visitCount: 1
       };
+      
+      console.log('Создание нового пользователя с начальным счетчиком посещений:', createData.visitCount);
       
       // Добавляем дату рождения при создании, если она определена
       if (birthdate !== null) {

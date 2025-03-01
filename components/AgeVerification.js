@@ -20,8 +20,11 @@ export default function AgeVerification({ user, onVerified }) {
   // Проверяем данные пользователя при загрузке компонента
   useEffect(() => {
     if (user) {
+      console.log('Проверка возраста для пользователя:', user);
+      
       // Проверяем, есть ли данные о дате рождения в пользователе
       if (user.birthdate) {
+        console.log('У пользователя есть дата рождения:', user.birthdate);
         const birthdate = new Date(user.birthdate);
         const today = new Date();
         
@@ -36,20 +39,27 @@ export default function AgeVerification({ user, onVerified }) {
         
         if (age >= 18) {
           // Пользователю 18 или больше, продолжаем работу приложения
+          console.log('Пользователь старше 18 лет, пропускаем проверку возраста');
           onVerified();
         } else {
           // Пользователю меньше 18, показываем уведомление
+          console.log('Пользователь младше 18 лет, показываем уведомление');
           setShowAskAge(false);
         }
       } else {
         // Проверяем, новый ли это пользователь (первый визит)
-        if (user.visitCount && user.visitCount > 0) {
+        // Используем данные из базы данных, если они доступны
+        const visitCount = user._serverData?.visitCount || user.visitCount || 0;
+        console.log('Счетчик посещений пользователя:', visitCount);
+        
+        if (visitCount > 1) {
           // Это существующий пользователь, который уже посещал приложение
           // Считаем, что он уже подтвердил возраст, поэтому пропускаем проверку
           console.log('Пользователь уже посещал приложение, пропускаем проверку возраста');
           onVerified();
         } else {
           // Это новый пользователь или первый визит, показываем запрос о возрасте
+          console.log('Новый пользователь, показываем запрос о возрасте');
           setShowAskAge(true);
         }
       }
@@ -75,7 +85,7 @@ export default function AgeVerification({ user, onVerified }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id
+          userId: user.dbId || user.id
         }),
       });
       
@@ -257,60 +267,49 @@ export default function AgeVerification({ user, onVerified }) {
             color: var(--tg-theme-hint-color, #999999);
           }
           
-          .error-message {
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            color: #e74c3c;
-            background-color: rgba(231, 76, 60, 0.1);
-            border-radius: 8px;
-            width: 100%;
-            text-align: center;
-          }
-          
           .button-group {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            width: 100%;
-          }
-          
-          .yes-button, .no-button {
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 2rem;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s;
+            gap: 0.75rem;
             width: 100%;
           }
           
           .yes-button {
             background-color: var(--tg-theme-button-color, #2481cc);
             color: var(--tg-theme-button-text-color, #ffffff);
-          }
-          
-          .yes-button:hover:not(:disabled) {
-            background-color: var(--tg-theme-button-color, #1a6baa);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
           }
           
           .no-button {
-            background-color: var(--tg-theme-secondary-bg-color, #f2f2f2);
-            color: var(--tg-theme-text-color, #000000);
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
           }
           
-          .no-button:hover:not(:disabled) {
-            background-color: #e0e0e0;
-          }
-          
-          .yes-button:disabled, .no-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
+          .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            width: 100%;
+            text-align: center;
           }
         `}</style>
       </div>
     );
   }
   
-  // По умолчанию ничего не рендерим, если проверка возраста еще не завершена
+  // Если проверка возраста не требуется или уже пройдена, возвращаем null
   return null;
 } 

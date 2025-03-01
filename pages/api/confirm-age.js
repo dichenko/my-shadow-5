@@ -8,8 +8,11 @@ export default async function handler(req, res) {
 
   try {
     const { userId } = req.body;
+    
+    console.log('Получен запрос на подтверждение возраста для пользователя:', userId);
 
     if (!userId) {
+      console.log('ID пользователя не предоставлен');
       return res.status(200).json({ 
         success: true,
         message: 'Возраст подтвержден без сохранения (ID не предоставлен)'
@@ -19,6 +22,7 @@ export default async function handler(req, res) {
     // Устанавливаем дату рождения, которая соответствует 18+ (18 лет назад от текущей даты)
     const eighteenYearsAgo = new Date();
     eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+    console.log('Устанавливаем дату рождения:', eighteenYearsAgo);
 
     try {
       // Получаем текущие данные пользователя
@@ -29,11 +33,18 @@ export default async function handler(req, res) {
       });
 
       if (!currentUser) {
+        console.log('Пользователь не найден в базе данных');
         return res.status(200).json({
           success: true,
           message: 'Пользователь не найден, возраст подтвержден без сохранения'
         });
       }
+      
+      console.log('Текущие данные пользователя:', {
+        id: currentUser.id,
+        visitCount: currentUser.visitCount,
+        birthdate: currentUser.birthdate
+      });
 
       // Обновляем пользователя в базе данных
       const user = await prisma.telegramUser.update({
@@ -42,9 +53,15 @@ export default async function handler(req, res) {
         },
         data: {
           birthdate: eighteenYearsAgo,
-          // Убедимся, что visitCount больше 0, чтобы в будущем пропускать проверку
-          visitCount: Math.max(currentUser.visitCount, 1)
+          // Устанавливаем счетчик посещений минимум 2, чтобы пропускать проверку в будущем
+          visitCount: Math.max(currentUser.visitCount, 2)
         }
+      });
+      
+      console.log('Пользователь успешно обновлен:', {
+        id: user.id,
+        visitCount: user.visitCount,
+        birthdate: user.birthdate
       });
 
       return res.status(200).json({

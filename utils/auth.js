@@ -26,16 +26,41 @@ export async function checkAuth(req, res) {
       return null;
     }
     
+    console.log('Аутентификация пользователя:', {
+      id: user.id,
+      текущийСчетчикПосещений: user.visitCount
+    });
+    
     // Обновляем дату последнего посещения и счетчик посещений
-    await prisma.telegramUser.update({
+    // Но не увеличиваем счетчик, если последнее посещение было менее 1 часа назад
+    const lastVisit = user.lastVisit ? new Date(user.lastVisit) : null;
+    const now = new Date();
+    const hoursSinceLastVisit = lastVisit ? (now - lastVisit) / (1000 * 60 * 60) : 24; // Если нет lastVisit, считаем как 24 часа
+    
+    const shouldIncrementVisitCount = hoursSinceLastVisit >= 1;
+    
+    console.log('Проверка времени с последнего посещения:', {
+      lastVisit,
+      now,
+      hoursSinceLastVisit,
+      shouldIncrementVisitCount
+    });
+    
+    const updatedUser = await prisma.telegramUser.update({
       where: { id: user.id },
       data: {
-        lastVisit: new Date(),
-        visitCount: { increment: 1 }
+        lastVisit: now,
+        visitCount: shouldIncrementVisitCount ? { increment: 1 } : user.visitCount
       }
     });
     
-    return user;
+    console.log('Пользователь обновлен:', {
+      id: updatedUser.id,
+      новыйСчетчикПосещений: updatedUser.visitCount,
+      lastVisit: updatedUser.lastVisit
+    });
+    
+    return updatedUser;
   } catch (error) {
     console.error('Ошибка при проверке аутентификации:', error);
     return null;
