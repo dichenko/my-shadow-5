@@ -582,27 +582,20 @@ export default function BlockQuestions() {
               ))}
             </div>
             
-            {/* Индикатор охлаждения */}
-            {isCooldown && (
-              <div className="cooldown-indicator" style={{ 
-                width: `${cooldownProgress}%`,
-                opacity: cooldownProgress / 100
-              }}></div>
-            )}
-            
             <div 
               className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'}`}
               ref={questionCardRef}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
+              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(240,240,240,0.6) 100%)' }}
             >
               <div className="question-text-container">
                 <p className="question-text">{currentQuestion.text}</p>
               </div>
             </div>
             
-            <div className="answer-buttons">
+            <div className="answer-buttons-row">
               <button 
                 className="btn btn-want"
                 onClick={() => submitAnswer('yes')}
@@ -618,22 +611,35 @@ export default function BlockQuestions() {
               >
                 НЕ ХОЧУ
               </button>
-              
+            </div>
+            
+            <div className="answer-buttons-row-second">
               <button 
                 className="btn btn-maybe"
                 onClick={() => submitAnswer('maybe')}
                 disabled={submitting || fadeOut || isCooldown}
               >
-                сомневаюсь
+                не уверен(а)
               </button>
             </div>
 
             <div className="swipe-hint">
-              <p>Свайпните влево, чтобы пропустить вопрос</p>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'scaleX(-1)' }}>
+                <path d="M14 5L21 12M21 12L14 19M21 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <p>свайп чтобы пропустить вопрос</p>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M14 5L21 12M21 12L14 19M21 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
+            
+            {/* Индикатор охлаждения */}
+            {isCooldown && (
+              <div className="cooldown-indicator" style={{ 
+                width: `${cooldownProgress}%`,
+                opacity: cooldownProgress / 100
+              }}></div>
+            )}
           </div>
         )}
       </main>
@@ -731,6 +737,9 @@ export default function BlockQuestions() {
           justify-content: center;
           align-items: center;
           will-change: transform, opacity; /* Оптимизация для анимаций */
+          background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(240,240,240,0.6) 100%);
+          backdrop-filter: blur(5px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
         .question-text-container {
@@ -749,11 +758,18 @@ export default function BlockQuestions() {
           text-align: center;
         }
         
-        .answer-buttons {
+        .answer-buttons-row {
           display: flex;
-          flex-direction: column;
           width: 100%;
           gap: 1rem;
+          margin-bottom: 0.75rem;
+        }
+        
+        .answer-buttons-row-second {
+          display: flex;
+          justify-content: center;
+          width: 100%;
+          margin-bottom: 1rem;
         }
         
         .btn {
@@ -776,22 +792,26 @@ export default function BlockQuestions() {
         }
         
         .btn-want {
-          background-color: #e0e0e0;
-          color: #000000;
+          background-color: #4CAF50;
+          color: white;
           font-size: 1.2rem;
+          flex: 1;
         }
         
         .btn-dont-want {
-          background-color: #e0e0e0;
-          color: #000000;
+          background-color: #F44336;
+          color: white;
           font-size: 1.2rem;
+          flex: 1;
         }
         
         .btn-maybe {
-          background-color: transparent;
+          background-color: rgba(200, 200, 200, 0.3);
           color: var(--tg-theme-hint-color, #999999);
           font-size: 0.9rem;
           font-weight: normal;
+          padding: 0.6rem 1.5rem;
+          border: 1px solid rgba(200, 200, 200, 0.5);
         }
         
         .fade-out {
@@ -975,7 +995,8 @@ export default function BlockQuestions() {
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
-          margin-top: 1rem;
+          margin-top: 0.5rem;
+          margin-bottom: 1rem;
           color: var(--tg-theme-hint-color, #999999);
           font-size: 0.9rem;
           opacity: 0.8;
@@ -984,23 +1005,6 @@ export default function BlockQuestions() {
         .swipe-hint svg {
           width: 16px;
           height: 16px;
-          animation: slideLeft 1.5s infinite;
-        }
-        
-        @keyframes slideLeft {
-          0%, 100% {
-            transform: translateX(0);
-          }
-          50% {
-            transform: translateX(5px);
-          }
-        }
-
-        /* Добавляем стили для свайпа вправо */
-        .question-card.swiping-right {
-          transform: translateX(30px);
-          opacity: 0.7;
-          transition: transform 0.15s ease-out, opacity 0.15s ease-out;
         }
 
         /* Добавляем стили для индикатора охлаждения */
@@ -1008,7 +1012,7 @@ export default function BlockQuestions() {
           height: 4px;
           background: linear-gradient(90deg, #FF6B6B, #FF4D8D);
           border-radius: 2px;
-          margin-bottom: 16px;
+          margin-top: 0.5rem;
           transition: width 0.05s linear, opacity 0.05s linear;
           box-shadow: 0 0 4px rgba(255, 77, 141, 0.5);
         }
