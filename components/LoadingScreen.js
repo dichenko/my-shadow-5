@@ -65,7 +65,7 @@ export default function LoadingScreen({ timeout = 5000 }) {
           font-size: 2.5rem;
           font-weight: bold;
           margin-bottom: 2rem;
-          background: linear-gradient(90deg, var(--purple-500), var(--purple-700));
+          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;

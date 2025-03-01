@@ -207,7 +207,12 @@ export default function Onboarding({ onComplete }) {
           font-size: 2rem;
           font-weight: bold;
           margin-bottom: 1rem;
-          color: var(--purple-600);
+          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-family: 'Montserrat', sans-serif;
+          letter-spacing: 1px;
         }
         
         .slide-subtitle {

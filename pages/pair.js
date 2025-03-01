@@ -461,6 +461,13 @@ export default function Pair() {
           font-size: 1.8rem;
           text-align: center;
           margin-bottom: 1.5rem;
+          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-family: 'Montserrat', sans-serif;
+          letter-spacing: 1px;
+          font-weight: bold;
         }
         
         h2 {
