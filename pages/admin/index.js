@@ -45,8 +45,9 @@ export default function Admin() {
     const adminToken = localStorage.getItem('adminToken');
     if (!adminToken) {
       console.log('Токен администратора не найден в localStorage, перенаправление на страницу входа');
-      router.replace('/admin/login');
-      return;
+      localStorage.removeItem('adminToken'); // Удаляем невалидный токен
+      window.location.href = '/admin/login';
+      return; // Прекращаем выполнение функции
     }
     
     // ID для хранения таймеров и интервалов
@@ -83,7 +84,7 @@ export default function Admin() {
         if (!authRes.ok) {
           console.log('Не авторизован, перенаправление на страницу входа');
           localStorage.removeItem('adminToken'); // Удаляем невалидный токен
-          router.replace('/admin/login');
+          window.location.href = '/admin/login';
           return; // Прекращаем выполнение функции
         }
         

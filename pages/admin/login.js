@@ -50,14 +50,8 @@ export default function Login() {
         
         if (res.ok && data.authenticated) {
           console.log('Администратор авторизован, перенаправление в панель...');
-          // Используем replace вместо push, чтобы избежать проблем с историей навигации
-          router.replace('/admin');
-          
-          // Добавляем резервный метод перенаправления через window.location
-          setTimeout(() => {
-            console.log('Применяем резервный метод перенаправления...');
-            window.location.href = '/admin';
-          }, 500);
+          // Используем window.location вместо router.replace
+          window.location.href = '/admin';
         } else {
           console.log('Администратор не авторизован, отображение формы входа');
           setDebugInfo({
@@ -77,7 +71,7 @@ export default function Login() {
     }
     
     checkAuth();
-  }, [router, authChecked]); // Добавляем authChecked в зависимости
+  }, [authChecked]); // Добавляем authChecked в зависимости
 
   const handleSubmit = async (e) => {
     e.preventDefault();

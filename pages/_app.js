@@ -8,6 +8,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import AgeVerification from '../components/AgeVerification';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { initTelegramApp } from '../utils/telegram';
 
 // Создаем клиент запросов с настройками кэширования
 const queryClient = new QueryClient({
@@ -52,7 +53,7 @@ function AppWithLoading({ Component, pageProps }) {
         
         // Если мы на индексной странице, перенаправляем на страницу вопросов
         if (router.pathname === '/') {
-          router.replace('/questions');
+          window.location.href = '/questions';
         }
         
         // Начинаем загружать данные о партнере и совпадениях
@@ -95,8 +96,13 @@ function AppWithLoading({ Component, pageProps }) {
     return <LoadingScreen timeout={10000} />;
   }
   
-  // Когда данные пользователя загружены, но не прошла проверка возраста
-  if (!userLoading && user && !isAgeVerified) {
+  // Проверяем, является ли текущая страница админ-панелью
+  const isAdminPage = typeof window !== 'undefined' && 
+    (router.pathname.startsWith('/admin') || 
+     window.location.pathname.startsWith('/admin'));
+  
+  // Когда данные пользователя загружены, но не прошла проверка возраста (кроме админ-панели)
+  if (!userLoading && user && !isAgeVerified && !isAdminPage) {
     return (
       <AgeVerification 
         user={user} 
@@ -108,8 +114,8 @@ function AppWithLoading({ Component, pageProps }) {
     );
   }
   
-  // Показываем загрузочный экран, если данные еще не готовы после проверки возраста
-  if (!isContentReady) {
+  // Показываем загрузочный экран, если данные еще не готовы после проверки возраста (кроме админ-панели)
+  if (!isContentReady && !isAdminPage) {
     return <LoadingScreen timeout={10000} />;
   }
   
