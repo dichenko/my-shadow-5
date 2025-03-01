@@ -19,6 +19,15 @@ export default function AgeVerification({ user, onVerified }) {
   
   // Проверяем данные пользователя при загрузке компонента
   useEffect(() => {
+    // Проверяем, было ли уже подтверждение возраста в localStorage
+    const ageVerifiedInStorage = typeof window !== 'undefined' && localStorage.getItem('ageVerified') === 'true';
+    
+    if (ageVerifiedInStorage) {
+      console.log('Возраст уже подтвержден (из localStorage)');
+      onVerified();
+      return;
+    }
+    
     if (user) {
       console.log('Проверка возраста для пользователя:', user);
       
@@ -40,6 +49,10 @@ export default function AgeVerification({ user, onVerified }) {
         if (age >= 18) {
           // Пользователю 18 или больше, продолжаем работу приложения
           console.log('Пользователь старше 18 лет, пропускаем проверку возраста');
+          // Сохраняем подтверждение возраста в localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ageVerified', 'true');
+          }
           onVerified();
         } else {
           // Пользователю меньше 18, показываем уведомление
@@ -56,6 +69,10 @@ export default function AgeVerification({ user, onVerified }) {
           // Это существующий пользователь, который уже посещал приложение
           // Считаем, что он уже подтвердил возраст, поэтому пропускаем проверку
           console.log('Пользователь уже посещал приложение, пропускаем проверку возраста');
+          // Сохраняем подтверждение возраста в localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ageVerified', 'true');
+          }
           onVerified();
         } else {
           // Это новый пользователь или первый визит, показываем запрос о возрасте
@@ -70,6 +87,10 @@ export default function AgeVerification({ user, onVerified }) {
   const handleAgeConfirm = async () => {
     if (!user || !user.id) {
       // Если нет ID пользователя, просто принимаем подтверждение
+      // Сохраняем подтверждение возраста в localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ageVerified', 'true');
+      }
       onVerified();
       return;
     }
@@ -111,11 +132,20 @@ export default function AgeVerification({ user, onVerified }) {
         console.log('Подтверждение возраста успешно сохранено');
       }
       
+      // Сохраняем подтверждение возраста в localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ageVerified', 'true');
+      }
+      
       // Независимо от результата запроса, принимаем подтверждение пользователя
       onVerified();
     } catch (error) {
       console.error('Ошибка при подтверждении возраста:', error);
       // Даже при ошибке принимаем подтверждение пользователя
+      // Сохраняем подтверждение возраста в localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ageVerified', 'true');
+      }
       onVerified();
     } finally {
       setIsConfirming(false);

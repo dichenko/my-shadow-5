@@ -63,15 +63,32 @@ function AppWithLoading({ Component, pageProps }) {
         return;
       }
       
-      // Проверяем, новый ли это пользователь (первый визит)
-      const visitCount = user._serverData?.visitCount || user.visitCount || 0;
+      // Проверяем, был ли уже пройден онбординг (из localStorage)
+      const onboardingCompletedInStorage = typeof window !== 'undefined' && localStorage.getItem('onboardingCompleted') === 'true';
       
-      if (visitCount <= 1) {
-        // Это новый пользователь, показываем онбординг
-        setShowOnboarding(true);
-      } else {
-        // Это существующий пользователь, пропускаем онбординг
+      // Проверяем, был ли уже подтвержден возраст (из localStorage)
+      const ageVerifiedInStorage = typeof window !== 'undefined' && localStorage.getItem('ageVerified') === 'true';
+      
+      if (onboardingCompletedInStorage) {
+        // Если онбординг уже пройден, отмечаем его как завершенный
         setOnboardingCompleted(true);
+        setShowOnboarding(false);
+      } else {
+        // Проверяем, новый ли это пользователь (первый визит)
+        const visitCount = user._serverData?.visitCount || user.visitCount || 0;
+        
+        if (visitCount <= 1) {
+          // Это новый пользователь, показываем онбординг
+          setShowOnboarding(true);
+        } else {
+          // Это существующий пользователь, пропускаем онбординг
+          setOnboardingCompleted(true);
+        }
+      }
+      
+      // Если возраст уже подтвержден, отмечаем это
+      if (ageVerifiedInStorage) {
+        setIsAgeVerified(true);
       }
     }
   }, [userLoading, user, router.pathname]);
@@ -79,6 +96,39 @@ function AppWithLoading({ Component, pageProps }) {
   // Отслеживаем загрузку данных пользователя
   useEffect(() => {
     if (!userLoading && user && isAgeVerified && onboardingCompleted) {
+      // Увеличиваем счетчик посещений пользователя
+      const incrementVisitCount = async () => {
+        try {
+          const userId = user.id || user.tgId;
+          // Проверяем, увеличивали ли мы уже счетчик в текущей сессии
+          const visitCountIncremented = typeof window !== 'undefined' && sessionStorage.getItem('visitCountIncremented') === 'true';
+          
+          if (!visitCountIncremented && userId) {
+            console.log('Увеличиваем счетчик посещений для пользователя:', userId);
+            
+            const response = await fetch('/api/increment-visit-count', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ userId }),
+            });
+            
+            if (response.ok) {
+              console.log('Счетчик посещений успешно увеличен');
+              // Отмечаем, что счетчик уже увеличен в этой сессии
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('visitCountIncremented', 'true');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Ошибка при увеличении счетчика посещений:', error);
+        }
+      };
+      
+      incrementVisitCount();
+      
       const timer = setTimeout(() => {
         setIsContentReady(true);
         
@@ -124,6 +174,10 @@ function AppWithLoading({ Component, pageProps }) {
   
   // Обработчик завершения онбординга
   const handleOnboardingComplete = () => {
+    // Сохраняем состояние онбординга в localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboardingCompleted', 'true');
+    }
     setShowOnboarding(false);
     setOnboardingCompleted(true);
   };
@@ -150,6 +204,10 @@ function AppWithLoading({ Component, pageProps }) {
         user={user} 
         onVerified={() => {
           console.log('Возраст подтвержден');
+          // Сохраняем подтверждение возраста в localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ageVerified', 'true');
+          }
           setIsAgeVerified(true);
         }} 
       />
