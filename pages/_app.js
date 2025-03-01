@@ -72,6 +72,24 @@ function AppWithLoading({ Component, pageProps }) {
     }
   }, [userLoading, user, router, isAgeVerified]);
   
+  // Инициализируем Telegram WebApp при монтировании компонента
+  useEffect(() => {
+    console.log('Попытка инициализации Telegram WebApp из useEffect');
+    
+    // Проверяем, является ли текущая страница админ-панелью
+    const isAdminPage = typeof window !== 'undefined' && 
+      (window.location.pathname.startsWith('/admin') || 
+       window.location.href.includes('/admin'));
+    
+    // Если это админ-панель, пропускаем инициализацию Telegram WebApp
+    if (isAdminPage) {
+      console.log('Обнаружена админ-панель, пропускаем инициализацию Telegram WebApp');
+      return;
+    }
+    
+    initTelegramApp();
+  }, []);
+  
   // Показываем загрузочный экран, если данные еще не загружены
   if (userLoading) {
     return <LoadingScreen timeout={10000} />;

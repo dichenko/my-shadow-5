@@ -41,6 +41,14 @@ export default function Admin() {
       return;
     }
     
+    // Проверяем наличие токена в localStorage
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      console.log('Токен администратора не найден в localStorage, перенаправление на страницу входа');
+      router.replace('/admin/login');
+      return;
+    }
+    
     // ID для хранения таймеров и интервалов
     const timers = [];
     
@@ -63,7 +71,9 @@ export default function Admin() {
             'Pragma': 'no-cache',
             'Expires': '0',
             // Добавляем заголовок для обхода проверки пользователя Telegram
-            'X-Admin-Panel': 'true'
+            'X-Admin-Panel': 'true',
+            // Добавляем токен авторизации
+            'Authorization': `Bearer ${adminToken}`
           }
         });
         
@@ -72,6 +82,7 @@ export default function Admin() {
         
         if (!authRes.ok) {
           console.log('Не авторизован, перенаправление на страницу входа');
+          localStorage.removeItem('adminToken'); // Удаляем невалидный токен
           router.replace('/admin/login');
           return; // Прекращаем выполнение функции
         }
@@ -83,23 +94,43 @@ export default function Admin() {
         const [practicesRes, blocksRes, questionsRes, usersRes, answersRes] = await Promise.all([
           fetch('/api/practices', { 
             credentials: 'include',
-            headers: { 'Cache-Control': 'no-cache' }
+            headers: { 
+              'Cache-Control': 'no-cache',
+              'X-Admin-Panel': 'true',
+              'Authorization': `Bearer ${adminToken}`
+            }
           }),
           fetch('/api/blocks', { 
             credentials: 'include',
-            headers: { 'Cache-Control': 'no-cache' }
+            headers: { 
+              'Cache-Control': 'no-cache',
+              'X-Admin-Panel': 'true',
+              'Authorization': `Bearer ${adminToken}`
+            }
           }),
           fetch('/api/questions', { 
             credentials: 'include',
-            headers: { 'Cache-Control': 'no-cache' }
+            headers: { 
+              'Cache-Control': 'no-cache',
+              'X-Admin-Panel': 'true',
+              'Authorization': `Bearer ${adminToken}`
+            }
           }),
           fetch('/api/users', { 
             credentials: 'include',
-            headers: { 'Cache-Control': 'no-cache' }
+            headers: { 
+              'Cache-Control': 'no-cache',
+              'X-Admin-Panel': 'true',
+              'Authorization': `Bearer ${adminToken}`
+            }
           }),
           fetch('/api/answers', { 
             credentials: 'include',
-            headers: { 'Cache-Control': 'no-cache' }
+            headers: { 
+              'Cache-Control': 'no-cache',
+              'X-Admin-Panel': 'true',
+              'Authorization': `Bearer ${adminToken}`
+            }
           })
         ]);
         
@@ -212,6 +243,8 @@ export default function Admin() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Panel': 'true',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
         body: JSON.stringify(newPractice),
       });
@@ -235,6 +268,8 @@ export default function Admin() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Panel': 'true',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
         body: JSON.stringify(newBlock),
       });
@@ -265,6 +300,8 @@ export default function Admin() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Panel': 'true',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
         body: JSON.stringify(questionData),
       });
@@ -334,6 +371,8 @@ export default function Admin() {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Panel': 'true',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
         body: JSON.stringify(data),
       });
@@ -371,6 +410,10 @@ export default function Admin() {
     try {
       const res = await fetch(`/api/practices?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'X-Admin-Panel': 'true',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
       });
       
       if (!res.ok) {
@@ -394,6 +437,10 @@ export default function Admin() {
     try {
       const res = await fetch(`/api/blocks?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'X-Admin-Panel': 'true',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
       });
       
       if (!res.ok) {
@@ -417,6 +464,10 @@ export default function Admin() {
     try {
       const res = await fetch(`/api/questions?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'X-Admin-Panel': 'true',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
       });
       
       if (!res.ok) {

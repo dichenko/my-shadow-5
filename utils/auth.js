@@ -115,6 +115,28 @@ export async function checkAdminAuth(req) {
       }
     }
     
+    // Если запрос идет от админ-панели, но нет заголовка авторизации, проверяем другие методы
+    if (isAdminPanel) {
+      console.log('Запрос от админ-панели, проверяем альтернативные методы авторизации');
+      
+      // Проверяем query параметр adminKey
+      const adminKey = req.query?.adminKey;
+      if (adminKey && adminKey === process.env.ADMIN_PASSWORD) {
+        console.log('Успешная авторизация через query параметр adminKey');
+        return true;
+      }
+      
+      // Проверяем cookie adminToken
+      if (cookieHeader) {
+        const cookies = parse(cookieHeader);
+        const adminToken = cookies.adminToken;
+        if (adminToken && adminToken === process.env.ADMIN_PASSWORD) {
+          console.log('Успешная авторизация через cookie adminToken');
+          return true;
+        }
+      }
+    }
+    
     if (!cookieHeader) {
       console.log('Cookie отсутствуют');
       

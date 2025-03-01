@@ -119,37 +119,9 @@ export default function Login() {
       // Сохраняем токен в localStorage в качестве запасного варианта
       localStorage.setItem('adminToken', password);
       
-      // Дополнительная проверка авторизации после входа
-      const checkResult = await fetch('/api/admin/check', { 
-        credentials: 'include',
-        headers: {
-          // Добавляем заголовок для обхода проверки пользователя Telegram
-          'X-Admin-Panel': 'true'
-        }
-      });
-      const checkData = await checkResult.json();
-      console.log('Проверка после входа:', checkData);
-      
-      if (checkResult.ok && checkData.authenticated) {
-        // Перенаправляем на админ-панель, используем replace вместо push
-        console.log('Вход успешен, перенаправление в админ-панель');
-        
-        // Пробуем использовать router.replace
-        router.replace('/admin');
-        
-        // Добавляем резервный метод перенаправления через window.location
-        setTimeout(() => {
-          console.log('Применяем резервный метод перенаправления...');
-          window.location.href = '/admin';
-        }, 500);
-      } else {
-        console.error('Странно: вход успешен, но проверка не прошла');
-        setError('Произошла ошибка при авторизации. Возможно, cookie не сохранились.');
-        setDebugInfo({
-          loginResponse: { status: res.status, data },
-          checkResponse: { status: checkResult.status, data: checkData }
-        });
-      }
+      // Перенаправляем на админ-панель напрямую
+      console.log('Вход успешен, перенаправление в админ-панель');
+      window.location.href = '/admin';
     } catch (error) {
       console.error('Ошибка при входе:', error);
       setError('Произошла ошибка при входе: ' + error.message);
