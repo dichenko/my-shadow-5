@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from '../components/ErrorBoundary';
 import LoadingScreen from '../components/LoadingScreen';
 import AgeVerification from '../components/AgeVerification';
+import Onboarding from '../components/Onboarding';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { initTelegramApp } from '../utils/telegram';
@@ -44,10 +45,40 @@ function AppWithLoading({ Component, pageProps }) {
   const router = useRouter();
   const [isContentReady, setIsContentReady] = useState(false);
   const [isAgeVerified, setIsAgeVerified] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  
+  // Проверяем, является ли пользователь новым
+  useEffect(() => {
+    if (!userLoading && user) {
+      // Проверяем, является ли текущая страница админ-панелью
+      const isAdminPage = typeof window !== 'undefined' && 
+        (router.pathname.startsWith('/admin') || 
+         window.location.pathname.startsWith('/admin'));
+      
+      if (isAdminPage) {
+        // Для админ-панели пропускаем онбординг и проверку возраста
+        setOnboardingCompleted(true);
+        setIsAgeVerified(true);
+        return;
+      }
+      
+      // Проверяем, новый ли это пользователь (первый визит)
+      const visitCount = user._serverData?.visitCount || user.visitCount || 0;
+      
+      if (visitCount <= 1) {
+        // Это новый пользователь, показываем онбординг
+        setShowOnboarding(true);
+      } else {
+        // Это существующий пользователь, пропускаем онбординг
+        setOnboardingCompleted(true);
+      }
+    }
+  }, [userLoading, user, router.pathname]);
   
   // Отслеживаем загрузку данных пользователя
   useEffect(() => {
-    if (!userLoading && user && isAgeVerified) {
+    if (!userLoading && user && isAgeVerified && onboardingCompleted) {
       const timer = setTimeout(() => {
         setIsContentReady(true);
         
@@ -71,7 +102,7 @@ function AppWithLoading({ Component, pageProps }) {
       
       return () => clearTimeout(timer);
     }
-  }, [userLoading, user, router, isAgeVerified]);
+  }, [userLoading, user, router, isAgeVerified, onboardingCompleted]);
   
   // Инициализируем Telegram WebApp при монтировании компонента
   useEffect(() => {
@@ -91,6 +122,12 @@ function AppWithLoading({ Component, pageProps }) {
     initTelegramApp();
   }, []);
   
+  // Обработчик завершения онбординга
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    setOnboardingCompleted(true);
+  };
+  
   // Показываем загрузочный экран, если данные еще не загружены
   if (userLoading) {
     return <LoadingScreen timeout={10000} />;
@@ -101,8 +138,13 @@ function AppWithLoading({ Component, pageProps }) {
     (router.pathname.startsWith('/admin') || 
      window.location.pathname.startsWith('/admin'));
   
-  // Когда данные пользователя загружены, но не прошла проверка возраста (кроме админ-панели)
-  if (!userLoading && user && !isAgeVerified && !isAdminPage) {
+  // Показываем онбординг для новых пользователей
+  if (!userLoading && user && showOnboarding && !onboardingCompleted && !isAdminPage) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
+  
+  // Когда данные пользователя загружены и онбординг пройден, но не прошла проверка возраста (кроме админ-панели)
+  if (!userLoading && user && onboardingCompleted && !isAgeVerified && !isAdminPage) {
     return (
       <AgeVerification 
         user={user} 

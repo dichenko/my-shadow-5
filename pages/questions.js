@@ -5,6 +5,7 @@ import { initTelegramApp, saveUserData, setupBackButton, setupHeader } from '../
 import { useUser } from '../utils/context';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
+import HowItWorksLink from '../components/HowItWorksLink';
 import { useQuery } from '@tanstack/react-query';
 import { fetchBlocksWithQuestions } from '../utils/api';
 
@@ -96,6 +97,14 @@ export default function Questions() {
         ) : (
           <BlocksList blocks={blocks} />
         )}
+        
+        {!blocksLoading && blocks.length === 0 && !error && (
+          <div className="loading">
+            Нет доступных блоков вопросов
+          </div>
+        )}
+        
+        <HowItWorksLink />
       </main>
       
       <BottomMenu />
