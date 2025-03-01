@@ -78,25 +78,56 @@ export async function checkAdminAuth(req) {
     const cookieHeader = req.headers.cookie || '';
     console.log('Проверка авторизации администратора. Заголовок Cookie:', cookieHeader);
     
-    if (!cookieHeader) {
-      console.log('Cookie отсутствуют');
+    // Логируем переменные окружения для отладки
+    console.log('ADMIN_PASSWORD установлен:', !!process.env.ADMIN_PASSWORD);
+    console.log('ADMIN_USERNAME установлен:', !!process.env.ADMIN_USERNAME);
+    console.log('Длина ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.length : 0);
+    console.log('Длина ADMIN_USERNAME:', process.env.ADMIN_USERNAME ? process.env.ADMIN_USERNAME.length : 0);
+    
+    // Логируем информацию о среде выполнения
+    console.log('Информация о среде выполнения:');
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- VERCEL_ENV:', process.env.VERCEL_ENV);
+    console.log('- VERCEL:', process.env.VERCEL);
+    
+    if (!process.env.ADMIN_PASSWORD) {
+      console.error('КРИТИЧЕСКАЯ ОШИБКА: ADMIN_PASSWORD не установлен в переменных окружения');
       return false;
     }
     
-    const cookies = parse(cookieHeader);
+    if (!cookieHeader) {
+      console.log('Cookie отсутствуют');
+      
+      // Проверяем другие методы авторизации, если cookie отсутствуют
+      console.log('Проверка альтернативных методов авторизации...');
+    }
+    
+    const cookies = parse(cookieHeader || '');
     console.log('Найденные cookies:', Object.keys(cookies));
     
     // Проверка через стандартный adminToken
     const adminToken = cookies.adminToken;
-    if (adminToken && adminToken === process.env.ADMIN_PASSWORD) {
-      console.log('Успешная авторизация через adminToken');
-      return true;
+    if (adminToken) {
+      console.log('Найден adminToken, длина:', adminToken.length);
+      console.log('Первые 5 символов adminToken:', adminToken.substring(0, 5));
+      console.log('Первые 5 символов ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD.substring(0, 5));
+      console.log('Совпадение adminToken с ADMIN_PASSWORD:', adminToken === process.env.ADMIN_PASSWORD);
+      
+      if (adminToken === process.env.ADMIN_PASSWORD) {
+        console.log('Успешная авторизация через adminToken');
+        return true;
+      } else {
+        console.log('adminToken не совпадает с ADMIN_PASSWORD');
+      }
+    } else {
+      console.log('adminToken отсутствует в cookies');
     }
     
     // Проверка через NextAuth session token
     const nextAuthToken = cookies['__Secure-next-auth.session-token'] || cookies['next-auth.session-token'];
     if (nextAuthToken) {
       console.log('Найден NextAuth token, длина:', nextAuthToken.length);
+      console.log('Первые 20 символов NextAuth token:', nextAuthToken.substring(0, 20));
       
       // Здесь можно добавить логику проверки NextAuth токена
       // Например, проверить его подпись или отправить запрос к API NextAuth
@@ -108,10 +139,14 @@ export async function checkAdminAuth(req) {
         if (nextAuthToken.startsWith('eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..')) {
           console.log('Успешная авторизация через NextAuth token');
           return true;
+        } else {
+          console.log('NextAuth token не соответствует ожидаемому формату');
         }
       } catch (tokenErr) {
         console.error('Ошибка при проверке NextAuth токена:', tokenErr);
       }
+    } else {
+      console.log('NextAuth token отсутствует в cookies');
     }
     
     // Проверяем заголовок Authorization
@@ -119,18 +154,34 @@ export async function checkAdminAuth(req) {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       console.log('Найден Bearer token, длина:', token.length);
+      console.log('Первые 5 символов Bearer token:', token.substring(0, 5));
+      console.log('Совпадение Bearer token с ADMIN_PASSWORD:', token === process.env.ADMIN_PASSWORD);
       
       if (token === process.env.ADMIN_PASSWORD) {
         console.log('Успешная авторизация через Bearer token');
         return true;
+      } else {
+        console.log('Bearer token не совпадает с ADMIN_PASSWORD');
       }
+    } else {
+      console.log('Bearer token отсутствует в заголовках');
     }
     
     // Проверяем query параметр (не рекомендуется для продакшена)
     const adminKey = req.query?.adminKey;
-    if (adminKey && adminKey === process.env.ADMIN_PASSWORD) {
-      console.log('Успешная авторизация через query параметр');
-      return true;
+    if (adminKey) {
+      console.log('Найден adminKey в query, длина:', adminKey.length);
+      console.log('Первые 5 символов adminKey:', adminKey.substring(0, 5));
+      console.log('Совпадение adminKey с ADMIN_PASSWORD:', adminKey === process.env.ADMIN_PASSWORD);
+      
+      if (adminKey === process.env.ADMIN_PASSWORD) {
+        console.log('Успешная авторизация через query параметр');
+        return true;
+      } else {
+        console.log('adminKey не совпадает с ADMIN_PASSWORD');
+      }
+    } else {
+      console.log('adminKey отсутствует в query параметрах');
     }
     
     console.log('Все методы авторизации не прошли проверку');

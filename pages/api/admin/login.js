@@ -21,6 +21,12 @@ export default async function handler(req, res) {
     console.log(`Получены учетные данные: username=${username ? 'предоставлен' : 'отсутствует'}, password=${password ? 'предоставлен' : 'отсутствует'}`);
     console.log(`Ожидаемые учетные данные: username=${process.env.ADMIN_USERNAME ? 'настроен' : 'не настроен'}, password=${process.env.ADMIN_PASSWORD ? 'настроен' : 'не настроен'}`);
     
+    // Добавляем дополнительное логирование для отладки
+    console.log('ADMIN_USERNAME установлен:', !!process.env.ADMIN_USERNAME);
+    console.log('ADMIN_PASSWORD установлен:', !!process.env.ADMIN_PASSWORD);
+    console.log('Длина ADMIN_USERNAME:', process.env.ADMIN_USERNAME ? process.env.ADMIN_USERNAME.length : 0);
+    console.log('Длина ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.length : 0);
+    
     if (!username || !password) {
       console.log('Отсутствует логин или пароль');
       return res.status(400).json({ success: false, message: 'Требуется логин и пароль' });
@@ -59,7 +65,12 @@ export default async function handler(req, res) {
         cookieSet: true,
         tokenLength: process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.length : 0,
         time: new Date().toISOString(),
-        origin: req.headers.origin || 'не указан'
+        origin: req.headers.origin || 'не указан',
+        env: {
+          NODE_ENV: process.env.NODE_ENV,
+          VERCEL_ENV: process.env.VERCEL_ENV,
+          VERCEL: process.env.VERCEL
+        }
       }
     });
   } catch (error) {
