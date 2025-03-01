@@ -34,149 +34,14 @@ export function UserProvider({ children }) {
         console.log('Данные пользователя из Telegram WebApp:', telegramUser);
         
         if (telegramUser && telegramUser.id) {
-          // Сохраняем данные пользователя на сервере
-          try {
-            console.log('Отправляем данные пользователя на сервер:', telegramUser);
-            const response = await fetch('/api/user', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(telegramUser),
-            });
-            
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              const errorMessage = `Не удалось сохранить данные пользователя. Статус: ${response.status}`;
-              console.error(errorMessage, errorData);
-              setError(errorMessage);
-              
-              // Отправляем ошибку на сервер для логирования
-              try {
-                fetch('/api/log-error', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    type: 'api_user_error',
-                    status: response.status,
-                    errorData,
-                    telegramUser,
-                    url: window.location.href,
-                    timestamp: new Date().toISOString()
-                  }),
-                });
-              } catch (e) {
-                console.error('Failed to send error log:', e);
-              }
-            } else {
-              const userData = await response.json().catch(() => ({}));
-              console.log('Данные пользователя успешно сохранены на сервере:', userData);
-              
-              if (userData && userData.id) {
-                setServerUser(userData);
-                
-                // Сохраняем ID пользователя в localStorage для использования в случае проблем с cookie
-                try {
-                  localStorage.setItem('userId', userData.id.toString());
-                } catch (storageError) {
-                  console.error('Ошибка при сохранении ID в localStorage:', storageError);
-                }
-              } else {
-                const errorMessage = 'Получен пустой или некорректный ответ от API';
-                console.error(errorMessage, userData);
-                setError(errorMessage);
-                
-                // Отправляем ошибку на сервер для логирования
-                try {
-                  fetch('/api/log-error', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      type: 'invalid_user_data',
-                      userData,
-                      telegramUser,
-                      url: window.location.href,
-                      timestamp: new Date().toISOString()
-                    }),
-                  });
-                } catch (e) {
-                  console.error('Failed to send error log:', e);
-                }
-              }
-            }
-          } catch (saveError) {
-            const errorMessage = 'Ошибка при сохранении данных пользователя';
-            console.error(errorMessage, saveError);
-            setError(`${errorMessage}: ${saveError.message}`);
-            
-            // Отправляем ошибку на сервер для логирования
-            try {
-              fetch('/api/log-error', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  type: 'save_user_error',
-                  message: saveError.message,
-                  stack: saveError.stack,
-                  telegramUser,
-                  url: window.location.href,
-                  timestamp: new Date().toISOString()
-                }),
-              });
-            } catch (e) {
-              console.error('Failed to send error log:', e);
-            }
-          }
-          
-          setUser({
-            ...telegramUser,
-            // Добавляем дополнительную информацию для отладки
-            _source: 'telegram'
-          });
+          // Устанавливаем данные пользователя в состояние, но не сохраняем на сервере
+          // Сохранение будет происходить только после подтверждения возраста
+          setUser(telegramUser);
+          setLoading(false);
         } else {
-          const errorMessage = 'Не удалось получить данные пользователя из Telegram WebApp';
-          console.error(errorMessage);
-          setError(errorMessage);
-          
-          // Отправляем ошибку на сервер для логирования
-          try {
-            fetch('/api/log-error', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                type: 'no_telegram_user',
-                telegramUser,
-                window_telegram: typeof window !== 'undefined' ? !!window.Telegram : false,
-                url: window.location.href,
-                userAgent: navigator.userAgent,
-                timestamp: new Date().toISOString()
-              }),
-            });
-          } catch (e) {
-            console.error('Failed to send error log:', e);
-          }
-          
-          // Пытаемся восстановить ID пользователя из localStorage
-          try {
-            const storedUserId = localStorage.getItem('userId');
-            if (storedUserId) {
-              console.log('Восстановлен ID пользователя из localStorage:', storedUserId);
-              setUser({
-                id: parseInt(storedUserId, 10),
-                _source: 'localStorage'
-              });
-            }
-          } catch (storageError) {
-            console.error('Ошибка при чтении из localStorage:', storageError);
-          }
+          console.error('Не удалось получить данные пользователя из Telegram WebApp');
+          setError('Не удалось получить данные пользователя');
+          setLoading(false);
         }
       } catch (error) {
         const errorMessage = 'Ошибка при загрузке данных пользователя';
@@ -202,8 +67,6 @@ export function UserProvider({ children }) {
         } catch (e) {
           console.error('Failed to send error log:', e);
         }
-      } finally {
-        setLoading(false);
       }
     }
     

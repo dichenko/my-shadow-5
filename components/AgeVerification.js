@@ -78,8 +78,24 @@ export default function AgeVerification({ user, onVerified }) {
     setConfirmError(null);
     
     try {
-      // Пытаемся сохранить информацию о подтверждении возраста
-      const response = await fetch('/api/confirm-age', {
+      // Сначала сохраняем данные пользователя на сервере
+      console.log('Отправляем данные пользователя на сервер:', user);
+      const userResponse = await fetch('/api/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(user),
+      });
+      
+      if (!userResponse.ok) {
+        console.error('Не удалось сохранить данные пользователя. Статус:', userResponse.status);
+      } else {
+        console.log('Данные пользователя успешно сохранены');
+      }
+      
+      // Затем пытаемся сохранить информацию о подтверждении возраста
+      const ageResponse = await fetch('/api/confirm-age', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,6 +104,12 @@ export default function AgeVerification({ user, onVerified }) {
           userId: user.dbId || user.id
         }),
       });
+      
+      if (!ageResponse.ok) {
+        console.error('Не удалось сохранить подтверждение возраста. Статус:', ageResponse.status);
+      } else {
+        console.log('Подтверждение возраста успешно сохранено');
+      }
       
       // Независимо от результата запроса, принимаем подтверждение пользователя
       onVerified();
