@@ -597,19 +597,19 @@ export default function BlockQuestions() {
             
             <div className="answer-buttons-row">
               <button 
-                className="btn btn-want"
-                onClick={() => submitAnswer('yes')}
-                disabled={submitting || fadeOut || isCooldown}
-              >
-                ХОЧУ
-              </button>
-              
-              <button 
                 className="btn btn-dont-want"
                 onClick={() => submitAnswer('no')}
                 disabled={submitting || fadeOut || isCooldown}
               >
                 НЕ ХОЧУ
+              </button>
+              
+              <button 
+                className="btn btn-want"
+                onClick={() => submitAnswer('yes')}
+                disabled={submitting || fadeOut || isCooldown}
+              >
+                ХОЧУ
               </button>
             </div>
             

@@ -25,8 +25,8 @@ export default function Onboarding({ onComplete }) {
             Хотели бы вы попробовать ролевые игры?
           </div>
           <div className="question-buttons">
-            <button className="btn-yes">ХОЧУ</button>
             <button className="btn-no">НЕ ХОЧУ</button>
+            <button className="btn-yes">ХОЧУ</button>
             <button className="btn-maybe">СОМНЕВАЮСЬ</button>
           </div>
         </div>
