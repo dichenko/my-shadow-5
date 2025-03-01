@@ -135,14 +135,67 @@ export default function Pair() {
   const copyCode = () => {
     if (codeRef.current) {
       const codeText = codeRef.current.innerText;
+      
+      // Проверяем поддержку API буфера обмена
+      if (!navigator.clipboard) {
+        // Запасной вариант для старых браузеров или WebView
+        fallbackCopyTextToClipboard(codeText);
+        return;
+      }
+      
       navigator.clipboard.writeText(codeText)
         .then(() => {
           setCopySuccess(true);
           setTimeout(() => setCopySuccess(false), 2000);
         })
-        .catch(() => {
-          setError('Не удалось скопировать код');
+        .catch((err) => {
+          console.error('Ошибка копирования в буфер обмена:', err);
+          // Если основной метод не сработал, используем запасной
+          fallbackCopyTextToClipboard(codeText);
         });
+    }
+  };
+  
+  // Резервный метод копирования для браузеров без поддержки Clipboard API
+  const fallbackCopyTextToClipboard = (text) => {
+    try {
+      // Создаем временный текстовый элемент
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Делаем элемент невидимым
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.width = '2em';
+      textArea.style.height = '2em';
+      textArea.style.padding = '0';
+      textArea.style.border = 'none';
+      textArea.style.outline = 'none';
+      textArea.style.boxShadow = 'none';
+      textArea.style.background = 'transparent';
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          setCopySuccess(true);
+          setTimeout(() => setCopySuccess(false), 2000);
+        } else {
+          setError('Не удалось скопировать код');
+        }
+      } catch (err) {
+        console.error('Ошибка при копировании через execCommand:', err);
+        setError('Не удалось скопировать код');
+      }
+      
+      document.body.removeChild(textArea);
+    } catch (err) {
+      console.error('Ошибка при создании резервного метода копирования:', err);
+      setError('Не удалось скопировать код');
     }
   };
 
@@ -452,13 +505,16 @@ export default function Pair() {
         .code-container {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 8px;
           margin-bottom: 1rem;
+          position: relative;
+          width: 100%;
+          max-width: 100%;
         }
         
         .code {
           font-family: monospace;
-          font-size: 1.4rem;
+          font-size: 1.3rem;
           font-weight: bold;
           letter-spacing: 1px;
           padding: 0.5rem 1rem;
@@ -467,6 +523,10 @@ export default function Pair() {
           flex: 1;
           text-align: center;
           border: 1px solid var(--purple-200);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          min-width: 0;
         }
         
         .copy-button {
@@ -481,14 +541,17 @@ export default function Pair() {
           display: flex;
           align-items: center;
           justify-content: center;
+          min-width: 40px;
           width: 40px;
           height: 40px;
+          flex-shrink: 0;
           position: relative;
           margin: 0;
           transform: none !important;
           box-shadow: none;
           transform-origin: center center;
           will-change: background-color;
+          z-index: 1;
         }
         
         .copy-button:active,
@@ -500,8 +563,9 @@ export default function Pair() {
           top: 0 !important;
           margin: 0 !important;
           outline: none;
-          box-shadow: none;
+          box-shadow: none !important;
           position: relative;
+          scale: 1 !important;
         }
         
         .code-info {
