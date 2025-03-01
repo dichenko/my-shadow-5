@@ -139,13 +139,15 @@ export default function Onboarding({ onComplete }) {
           display: flex;
           flex-direction: column;
           overflow: hidden;
+          justify-content: space-between;
+          padding-bottom: 20px;
         }
         
         .slides-container {
           flex: 1;
           position: relative;
           width: 100%;
-          height: 100%;
+          height: calc(100% - 40px);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -233,15 +235,19 @@ export default function Onboarding({ onComplete }) {
         .dots-container {
           display: flex;
           justify-content: center;
-          margin-bottom: 2rem;
           gap: 0.5rem;
-          z-index: 10;
-          position: relative;
+          z-index: 100;
+          position: absolute;
+          bottom: 20px;
+          left: 0;
+          right: 0;
+          padding: 10px 0;
+          height: 30px;
         }
         
         .dot {
-          width: 10px;
-          height: 10px;
+          width: 12px;
+          height: 12px;
           border-radius: 50%;
           background-color: rgba(255, 255, 255, 0.6);
           cursor: pointer;
@@ -251,7 +257,8 @@ export default function Onboarding({ onComplete }) {
         
         .dot.active {
           background-color: white;
-          transform: scale(1.2);
+          transform: scale(1.3);
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
         }
         
         .start-button {

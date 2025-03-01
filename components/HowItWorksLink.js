@@ -6,10 +6,18 @@ export default function HowItWorksLink() {
   
   const openOnboarding = () => {
     setShowOnboarding(true);
+    // Добавляем класс к body, чтобы предотвратить прокрутку страницы
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+    }
   };
   
   const closeOnboarding = () => {
     setShowOnboarding(false);
+    // Восстанавливаем прокрутку страницы
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = '';
+    }
   };
   
   return (
@@ -18,7 +26,11 @@ export default function HowItWorksLink() {
         Как это работает?
       </div>
       
-      {showOnboarding && <Onboarding onComplete={closeOnboarding} />}
+      {showOnboarding && (
+        <div className="onboarding-wrapper">
+          <Onboarding onComplete={closeOnboarding} />
+        </div>
+      )}
       
       <style jsx>{`
         .how-it-works-link {
@@ -35,6 +47,15 @@ export default function HowItWorksLink() {
         .how-it-works-link:hover {
           opacity: 1;
           text-decoration: underline;
+        }
+        
+        .onboarding-wrapper {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 1000;
         }
       `}</style>
     </>
