@@ -22,8 +22,8 @@ export default function LoadingScreen({ timeout = 5000 }) {
             <Image 
               src="/images/loading-image.png" 
               alt="Loading" 
-              width={200} 
-              height={200}
+              width={300} 
+              height={300}
               priority 
             />
           </div>
