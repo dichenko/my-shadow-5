@@ -282,8 +282,25 @@ export default function BlockQuestions() {
         nextIndex = currentQuestionIndex >= updatedQuestions.length - 1 ? 0 : currentQuestionIndex + 1;
       }
       
-      // Запускаем анимацию исчезновения текущего вопроса
+      // Сохраняем ID обрабатываемого вопроса для проверки при получении ответа
+      const processedQuestionId = currentQuestion.id;
+      
+      // ИЗМЕНЕНИЕ: Сразу переключаемся на следующий вопрос без ожидания ответа сервера
+      // Быстрая анимация для перехода между вопросами
       setFadeOut(true);
+      
+      // Устанавливаем следующий индекс сразу
+      setTimeout(() => {
+        // Если у нас всего один вопрос, оставляем его на месте
+        if (updatedQuestions.length > 1) {
+          setCurrentQuestionIndex(nextIndex);
+        }
+        
+        // Запускаем анимацию появления нового вопроса
+        setTimeout(() => {
+          setFadeOut(false);
+        }, 50);
+      }, 100);
       
       // Подготавливаем данные для отправки на сервер
       const answerData = {
@@ -293,9 +310,6 @@ export default function BlockQuestions() {
       };
       
       console.log('Отправляем ответ:', answerData);
-      
-      // Сохраняем ID обрабатываемого вопроса для проверки при получении ответа
-      const processedQuestionId = currentQuestion.id;
       
       // Запускаем отправку ответа на сервер
       fetch('/api/answers', {
@@ -331,17 +345,13 @@ export default function BlockQuestions() {
             console.log('Вопрос все еще в списке:', questionStillExists);
             
             if (questionStillExists) {
-              // Удаляем проблемный вопрос из списка
+              // Удаляем проблемный вопрос из списка без изменения текущего отображения
               const filteredQuestions = updatedQuestions.filter(q => q.id !== processedQuestionId);
               
               console.log('Отфильтрованные вопросы:', filteredQuestions.length);
               
               // Обновляем список вопросов
               setQuestions(filteredQuestions);
-              
-              // Корректируем индекс текущего вопроса
-              const newIndex = Math.min(nextIndex, filteredQuestions.length - 1);
-              setCurrentQuestionIndex(newIndex >= 0 ? newIndex : 0);
               
               // Показываем уведомление пользователю
               setError('Произошла ошибка при сохранении ответа. Вопрос не найден.');
@@ -350,18 +360,11 @@ export default function BlockQuestions() {
               if (filteredQuestions.length === 0) {
                 setAllQuestionsAnswered(true);
                 createHearts(); // Создаем анимацию сердечек
-              } else {
-                // Запускаем анимацию появления нового вопроса
-                setTimeout(() => {
-                  setFadeOut(false);
-                }, 150);
               }
             }
           } else {
             // Другие ошибки
             setError(data.error || 'Ошибка при сохранении ответа');
-            // Отменяем анимацию исчезновения
-            setFadeOut(false);
           }
           
           return;
@@ -373,34 +376,15 @@ export default function BlockQuestions() {
         const filteredQuestions = updatedQuestions.filter(q => q.id !== processedQuestionId);
         setQuestions(filteredQuestions);
         
-        // Корректируем индекс, если необходимо
-        if (answeredQuestionIndex >= filteredQuestions.length) {
-          setCurrentQuestionIndex(0);
-        } else if (answeredQuestionIndex < nextIndex && nextIndex > 0) {
-          // Если удаленный вопрос был перед следующим, корректируем индекс
-          setCurrentQuestionIndex(nextIndex - 1);
-        } else {
-          setCurrentQuestionIndex(nextIndex);
-        }
-        
         // Если это был последний вопрос, показываем сообщение о завершении
         if (filteredQuestions.length === 0) {
-          // Минимальная задержка для анимации исчезновения
+          setShowCompletionMessage(true);
+          createHearts(); // Создаем анимацию сердечек
+          
+          // Через 2.5 секунды переходим на главную страницу
           setTimeout(() => {
-            setShowCompletionMessage(true);
-            createHearts(); // Создаем анимацию сердечек
-            
-            // Через 2.5 секунды переходим на главную страницу
-            setTimeout(() => {
-              router.push('/questions');
-            }, 2500);
-          }, 150);
-        } else {
-          // Задержка для анимации исчезновения (увеличена для учета времени кулдауна)
-          setTimeout(() => {
-            // Запускаем анимацию появления нового вопроса
-            setFadeOut(false);
-          }, 150);
+            router.push('/questions');
+          }, 2500);
         }
         
         // Инвалидируем кэш для обновления счетчика ответов
@@ -409,8 +393,6 @@ export default function BlockQuestions() {
       .catch(err => {
         console.error('Ошибка при отправке ответа:', err);
         setError('Сетевая ошибка. Пожалуйста, проверьте подключение и попробуйте снова.');
-        // Отменяем анимацию исчезновения
-        setFadeOut(false);
       })
       .finally(() => {
         setSubmitting(false);
