@@ -51,6 +51,8 @@ function AppWithLoading({ Component, pageProps }) {
   // Проверяем, является ли пользователь новым
   useEffect(() => {
     if (!userLoading && user) {
+      console.log('Проверка пользователя для онбординга:', user);
+      
       // Проверяем, является ли текущая страница админ-панелью
       const isAdminPage = typeof window !== 'undefined' && 
         (router.pathname.startsWith('/admin') || 
@@ -69,21 +71,18 @@ function AppWithLoading({ Component, pageProps }) {
       // Проверяем, был ли уже подтвержден возраст (из localStorage)
       const ageVerifiedInStorage = typeof window !== 'undefined' && localStorage.getItem('ageVerified') === 'true';
       
+      console.log('Статус онбординга в localStorage:', onboardingCompletedInStorage);
+      console.log('Статус проверки возраста в localStorage:', ageVerifiedInStorage);
+      
       if (onboardingCompletedInStorage) {
         // Если онбординг уже пройден, отмечаем его как завершенный
         setOnboardingCompleted(true);
         setShowOnboarding(false);
       } else {
-        // Проверяем, новый ли это пользователь (первый визит)
-        const visitCount = user._serverData?.visitCount || user.visitCount || 0;
-        
-        if (visitCount <= 1) {
-          // Это новый пользователь, показываем онбординг
-          setShowOnboarding(true);
-        } else {
-          // Это существующий пользователь, пропускаем онбординг
-          setOnboardingCompleted(true);
-        }
+        // Для новых пользователей всегда показываем онбординг
+        // Это исправление проблемы, когда онбординг не показывается новым пользователям
+        setShowOnboarding(true);
+        console.log('Показываем онбординг новому пользователю');
       }
       
       // Если возраст уже подтвержден, отмечаем это

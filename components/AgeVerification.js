@@ -22,64 +22,17 @@ export default function AgeVerification({ user, onVerified }) {
     // Проверяем, было ли уже подтверждение возраста в localStorage
     const ageVerifiedInStorage = typeof window !== 'undefined' && localStorage.getItem('ageVerified') === 'true';
     
-    if (ageVerifiedInStorage) {
-      console.log('Возраст уже подтвержден (из localStorage)');
-      onVerified();
-      return;
-    }
+    console.log('Проверка возраста пользователя:', user);
+    console.log('Статус проверки возраста в localStorage:', ageVerifiedInStorage);
     
-    if (user) {
-      console.log('Проверка возраста для пользователя:', user);
-      
-      // Проверяем, есть ли данные о дате рождения в пользователе
-      if (user.birthdate) {
-        console.log('У пользователя есть дата рождения:', user.birthdate);
-        const birthdate = new Date(user.birthdate);
-        const today = new Date();
-        
-        // Рассчитываем возраст
-        let age = today.getFullYear() - birthdate.getFullYear();
-        const monthDiff = today.getMonth() - birthdate.getMonth();
-        
-        // Если еще не было дня рождения в этом году, уменьшаем возраст на 1
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
-          age--;
-        }
-        
-        if (age >= 18) {
-          // Пользователю 18 или больше, продолжаем работу приложения
-          console.log('Пользователь старше 18 лет, пропускаем проверку возраста');
-          // Сохраняем подтверждение возраста в localStorage
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('ageVerified', 'true');
-          }
-          onVerified();
-        } else {
-          // Пользователю меньше 18, показываем уведомление
-          console.log('Пользователь младше 18 лет, показываем уведомление');
-          setShowAskAge(false);
-        }
-      } else {
-        // Проверяем, новый ли это пользователь (первый визит)
-        // Используем данные из базы данных, если они доступны
-        const visitCount = user._serverData?.visitCount || user.visitCount || 0;
-        console.log('Счетчик посещений пользователя:', visitCount);
-        
-        if (visitCount > 1) {
-          // Это существующий пользователь, который уже посещал приложение
-          // Считаем, что он уже подтвердил возраст, поэтому пропускаем проверку
-          console.log('Пользователь уже посещал приложение, пропускаем проверку возраста');
-          // Сохраняем подтверждение возраста в localStorage
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('ageVerified', 'true');
-          }
-          onVerified();
-        } else {
-          // Это новый пользователь или первый визит, показываем запрос о возрасте
-          console.log('Новый пользователь, показываем запрос о возрасте');
-          setShowAskAge(true);
-        }
-      }
+    if (ageVerifiedInStorage) {
+      // Если возраст уже подтвержден, пропускаем проверку
+      console.log('Возраст уже подтвержден в localStorage, пропускаем проверку');
+      onVerified();
+    } else {
+      // Всегда показываем запрос о возрасте для новых пользователей
+      console.log('Показываем запрос о возрасте новому пользователю');
+      setShowAskAge(true);
     }
   }, [user, onVerified]);
   
