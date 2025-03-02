@@ -7,6 +7,23 @@ export default function Onboarding({ onComplete }) {
   const [animating, setAnimating] = useState(false);
   const slidesRef = useRef([]);
   
+  // Скрываем нижнее меню при открытии онбординга
+  useEffect(() => {
+    // Находим нижнее меню и скрываем его
+    const bottomMenu = document.querySelector('.bottom-menu');
+    if (bottomMenu) {
+      bottomMenu.style.display = 'none';
+    }
+    
+    // Восстанавливаем отображение нижнего меню при закрытии онбординга
+    return () => {
+      const bottomMenu = document.querySelector('.bottom-menu');
+      if (bottomMenu) {
+        bottomMenu.style.display = 'flex';
+      }
+    };
+  }, []);
+  
   const slides = [
     {
       id: 1,
@@ -140,14 +157,14 @@ export default function Onboarding({ onComplete }) {
           flex-direction: column;
           overflow: hidden;
           justify-content: space-between;
-          padding-bottom: 20px;
+          padding-bottom: 40px; /* Увеличиваем отступ снизу */
         }
         
         .slides-container {
           flex: 1;
           position: relative;
           width: 100%;
-          height: calc(100% - 40px);
+          height: calc(100% - 60px); /* Увеличиваем высоту для учета большего отступа снизу */
           display: flex;
           justify-content: center;
           align-items: center;
@@ -163,7 +180,7 @@ export default function Onboarding({ onComplete }) {
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
-          padding-top: 25vh;
+          padding-top: 15vh; /* Уменьшаем отступ сверху с 25vh до 15vh */
           opacity: 0;
           transform: translateX(100%);
           transition: transform 0.5s ease, opacity 0.5s ease;
@@ -243,7 +260,7 @@ export default function Onboarding({ onComplete }) {
           gap: 0.5rem;
           z-index: 100;
           position: absolute;
-          bottom: 5vh;
+          bottom: 10vh; /* Увеличиваем отступ снизу для индикаторов */
           left: 0;
           right: 0;
           padding: 10px 0;
