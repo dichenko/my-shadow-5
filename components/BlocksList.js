@@ -3,11 +3,11 @@ import Link from 'next/link';
 export default function BlocksList({ blocks = [] }) {
   // Массив градиентов для блоков в минималистичном стиле
   const gradients = [
-    'linear-gradient(135deg, #E0E0E0 0%, #F5F5F5 100%)',
-    'linear-gradient(135deg, #D4D4D4 0%, #E8E8E8 100%)',
-    'linear-gradient(135deg, #CCCCCC 0%, #E0E0E0 100%)',
-    'linear-gradient(135deg, #C4C4C4 0%, #D8D8D8 100%)',
-    'linear-gradient(135deg, #BCBCBC 0%, #D0D0D0 100%)'
+    `linear-gradient(135deg, var(--purple-100) 0%, var(--purple-200) 100%)`,
+    `linear-gradient(135deg, var(--purple-200) 0%, var(--purple-300) 100%)`,
+    `linear-gradient(135deg, var(--purple-300) 0%, var(--purple-400) 100%)`,
+    `linear-gradient(135deg, var(--purple-400) 0%, var(--purple-500) 100%)`,
+    `linear-gradient(135deg, var(--purple-500) 0%, var(--purple-600) 100%)`
   ];
 
   return (

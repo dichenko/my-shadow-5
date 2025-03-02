@@ -122,14 +122,14 @@ export default function Questions() {
         
         .main {
           flex: 1;
-          padding-top: 4rem;
+          padding-top: 6rem;
         }
         
         .app-title {
           text-align: center;
           font-size: 2.5rem;
           font-weight: bold;
-          margin-bottom: 2rem;
+          margin-bottom: 3rem;
           background: linear-gradient(90deg, #ff6b6b, #6b66ff);
           -webkit-background-clip: text;
           background-clip: text;
