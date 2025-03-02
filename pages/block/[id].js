@@ -26,18 +26,6 @@ export default function BlockQuestions() {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const questionCardRef = useRef(null);
   
-  // Добавляем состояние для времени охлаждения
-  const [isCooldown, setIsCooldown] = useState(false);
-  const [cooldownProgress, setCooldownProgress] = useState(100);
-  const cooldownTime = 2500; // 2.5 секунды охлаждения
-  const cooldownIntervalRef = useRef(null);
-
-  // Добавляем состояния для обработки свайпа
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-  const [swiping, setSwiping] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState(null);
-
   // Настраиваем кнопку "Назад" и заголовок Telegram WebApp
   useEffect(() => {
     // Показываем кнопку "Назад" и устанавливаем обработчик
@@ -165,33 +153,6 @@ export default function BlockQuestions() {
     fetchBlockData();
   }, [id, user]);
 
-  // Функция для предварительной подготовки следующего вопроса
-  const prepareNextQuestion = () => {
-    if (questions.length > 0 && currentQuestionIndex < questions.length - 1) {
-      // Предварительно загружаем следующий вопрос в кэш браузера
-      const nextQuestion = questions[currentQuestionIndex + 1];
-      if (nextQuestion && nextQuestion.text) {
-        // Создаем невидимый элемент для предзагрузки текста
-        const preloadDiv = document.createElement('div');
-        preloadDiv.style.position = 'absolute';
-        preloadDiv.style.opacity = '0';
-        preloadDiv.style.pointerEvents = 'none';
-        preloadDiv.innerText = nextQuestion.text;
-        document.body.appendChild(preloadDiv);
-        
-        // Удаляем элемент после короткой задержки
-        setTimeout(() => {
-          document.body.removeChild(preloadDiv);
-        }, 100);
-      }
-    }
-  };
-
-  // Вызываем предзагрузку при изменении текущего вопроса
-  useEffect(() => {
-    prepareNextQuestion();
-  }, [currentQuestionIndex, questions]);
-
   // Функция для создания анимации сердечек
   const createHearts = () => {
     const newHearts = [];
@@ -210,47 +171,9 @@ export default function BlockQuestions() {
     setHearts(newHearts);
   };
 
-  // Функция для запуска времени охлаждения
-  const startCooldown = () => {
-    setIsCooldown(true);
-    setCooldownProgress(100);
-    
-    // Создаем интервал для обновления прогресса
-    const startTime = Date.now();
-    const intervalTime = 50; // Обновляем каждые 50мс для плавной анимации
-    
-    // Очищаем предыдущий интервал, если он существует
-    if (cooldownIntervalRef.current) {
-      clearInterval(cooldownIntervalRef.current);
-    }
-    
-    cooldownIntervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const progress = 100 - (elapsed / cooldownTime) * 100;
-      
-      if (progress <= 0) {
-        // Завершаем охлаждение
-        clearInterval(cooldownIntervalRef.current);
-        setCooldownProgress(0);
-        setIsCooldown(false);
-      } else {
-        setCooldownProgress(progress);
-      }
-    }, intervalTime);
-  };
-  
-  // Останавливаем интервал при размонтировании компонента
-  useEffect(() => {
-    return () => {
-      if (cooldownIntervalRef.current) {
-        clearInterval(cooldownIntervalRef.current);
-      }
-    };
-  }, []);
-
   // Функция для отправки ответа
   const submitAnswer = async (answer) => {
-    if (!user || !questions.length || submitting || isCooldown) return;
+    if (!user || !questions.length || submitting) return;
     
     const currentQuestion = questions[currentQuestionIndex];
     
@@ -265,18 +188,14 @@ export default function BlockQuestions() {
       setSubmitting(true);
       setError(null);
       
-      // Запускаем время охлаждения
-      startCooldown();
-      
       // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
       const userId = user.dbId || user.id;
       
-      // Создаем копию массива вопросов для отслеживания изменений
+      // Создаем копию массива вопросов
       const updatedQuestions = [...questions];
       
-      // Сохраняем ID обрабатываемого вопроса и его индекс
+      // Сохраняем ID обрабатываемого вопроса
       const processedQuestionId = currentQuestion.id;
-      const answeredQuestionIndex = currentQuestionIndex;
       
       // Определяем следующий индекс до удаления вопроса
       let nextIndex = currentQuestionIndex;
@@ -285,24 +204,8 @@ export default function BlockQuestions() {
         nextIndex = currentQuestionIndex >= updatedQuestions.length - 1 ? 0 : currentQuestionIndex + 1;
       }
       
-      // Запоминаем следующий вопрос для отображения
-      const nextQuestion = updatedQuestions.length > 1 ? updatedQuestions[nextIndex] : null;
-      
       // Анимация исчезновения текущего вопроса
       setFadeOut(true);
-      
-      // Устанавливаем следующий индекс и запускаем анимацию появления нового вопроса
-      setTimeout(() => {
-        // Меняем индекс только если у нас есть следующий вопрос
-        if (updatedQuestions.length > 1) {
-          setCurrentQuestionIndex(nextIndex);
-        }
-        
-        // Запускаем анимацию появления нового вопроса
-        setTimeout(() => {
-          setFadeOut(false);
-        }, 50);
-      }, 100);
       
       // Подготавливаем данные для отправки на сервер
       const answerData = {
@@ -313,7 +216,39 @@ export default function BlockQuestions() {
       
       console.log('Отправляем ответ:', answerData);
       
-      // Запускаем отправку ответа на сервер
+      // Удаляем вопрос из массива сразу
+      const filteredQuestions = updatedQuestions.filter(q => q.id !== processedQuestionId);
+      
+      // Устанавливаем следующий индекс и запускаем анимацию появления нового вопроса
+      setTimeout(() => {
+        // Обновляем список вопросов
+        setQuestions(filteredQuestions);
+        
+        // Если вопросов больше нет, показываем сообщение о завершении
+        if (filteredQuestions.length === 0) {
+          setShowCompletionMessage(true);
+          createHearts();
+          
+          // Через 2.5 секунды переходим на главную страницу
+          setTimeout(() => {
+            router.push('/questions');
+          }, 2500);
+        } else {
+          // Если есть следующий вопрос, устанавливаем индекс
+          // Если после удаления текущий индекс стал слишком большим, корректируем его
+          if (nextIndex >= filteredQuestions.length) {
+            nextIndex = 0;
+          }
+          setCurrentQuestionIndex(nextIndex);
+          
+          // Запускаем анимацию появления нового вопроса
+          setTimeout(() => {
+            setFadeOut(false);
+          }, 50);
+        }
+      }, 200); // Увеличиваем время анимации исчезновения для более плавного эффекта
+      
+      // Асинхронно отправляем ответ на сервер
       fetch('/api/answers', {
         method: 'POST',
         headers: {
@@ -339,7 +274,7 @@ export default function BlockQuestions() {
         if (!response.ok) {
           console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
           
-          // В случае ошибки отображаем сообщение, но НЕ меняем список вопросов
+          // В случае ошибки отображаем сообщение
           if (response.status === 404 && data.error === 'Вопрос не найден') {
             setError('Произошла ошибка при сохранении ответа. Вопрос не найден.');
           } else {
@@ -350,41 +285,6 @@ export default function BlockQuestions() {
         }
         
         console.log('Ответ успешно сохранен:', data);
-        
-        // Обновляем массив вопросов, ТОЛЬКО если текущий вопрос не совпадает с отвеченным
-        // Это предотвращает исчезновение вопроса, который пользователь видит сейчас
-        if (questions.length > 0) {
-          // Создаем новый массив без отвеченного вопроса
-          const filteredQuestions = questions.filter(q => q.id !== processedQuestionId);
-          
-          // Проверяем, не удаляем ли мы вопрос, который сейчас отображается
-          const currentlyDisplayedQuestionId = currentQuestionIndex < questions.length ? 
-            questions[currentQuestionIndex].id : null;
-          
-          // Если отвеченный вопрос не тот, что сейчас отображается, безопасно обновляем массив
-          // ИЛИ если осталось 0 вопросов, то тоже обновляем
-          if (currentlyDisplayedQuestionId !== processedQuestionId || filteredQuestions.length === 0) {
-            setQuestions(filteredQuestions);
-            
-            // Если после удаления текущий индекс стал слишком большим, корректируем его
-            if (currentQuestionIndex >= filteredQuestions.length && filteredQuestions.length > 0) {
-              setCurrentQuestionIndex(0);
-            }
-            
-            // Если вопросов больше нет, показываем сообщение о завершении
-            if (filteredQuestions.length === 0) {
-              setShowCompletionMessage(true);
-              createHearts();
-              
-              // Через 2.5 секунды переходим на главную страницу
-              setTimeout(() => {
-                router.push('/questions');
-              }, 2500);
-            }
-          } else {
-            console.log('Пропускаем обновление вопросов, чтобы избежать исчезновения текущего вопроса');
-          }
-        }
         
         // Инвалидируем кэш для обновления счетчика ответов
         queryClient.invalidateQueries(['blocks-with-questions']);
@@ -404,115 +304,6 @@ export default function BlockQuestions() {
       // В случае ошибки отменяем анимацию исчезновения
       setFadeOut(false);
       setSubmitting(false);
-    }
-  };
-
-  // Функция для сброса ответов пользователя на вопросы блока
-  const resetBlockAnswers = async () => {
-    if (!user || !id) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
-      const userId = user.dbId || user.id;
-      
-      // Отправляем запрос на удаление ответов
-      const response = await fetch(`/api/delete-block-answers?userId=${userId}&blockId=${id}`, {
-        method: 'DELETE',
-      });
-      
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error('Ошибка при парсинге ответа:', parseError);
-        throw new Error('Ошибка при получении ответа от сервера');
-      }
-      
-      if (!response.ok) {
-        console.error('Ошибка при удалении ответов. Статус:', response.status, 'Ответ:', data);
-        throw new Error(data.error || 'Не удалось удалить ответы');
-      }
-      
-      console.log('Ответы успешно удалены:', data);
-      
-      // Инвалидируем кэш для обновления счетчика ответов
-      queryClient.invalidateQueries(['blocks-with-questions']);
-      
-      // Перезагружаем страницу для получения новых вопросов
-      router.reload();
-      
-    } catch (err) {
-      console.error('Ошибка при удалении ответов:', err);
-      setError(err.message || 'Не удалось удалить ответы. Пожалуйста, попробуйте еще раз.');
-      setLoading(false);
-    }
-  };
-
-  // Обработчики событий касания
-  const onTouchStart = (e) => {
-    // Не реагируем на касания во время охлаждения
-    if (isCooldown) return;
-    
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-  
-  const onTouchMove = (e) => {
-    // Не реагируем на движения во время охлаждения
-    if (isCooldown) return;
-    
-    setTouchEnd(e.targetTouches[0].clientX);
-    
-    // Добавляем индикацию свайпа
-    if (touchStart && questionCardRef.current) {
-      const distance = e.targetTouches[0].clientX - touchStart;
-      // Показываем индикацию свайпа только если движение достаточное (> 10px)
-      if (Math.abs(distance) > 10) {
-        setSwiping(true);
-        if (distance > 0) {
-          setSwipeDirection('right');
-          questionCardRef.current.classList.add('swiping-right');
-          questionCardRef.current.classList.remove('swiping-left');
-        } else {
-          setSwipeDirection('left');
-          questionCardRef.current.classList.add('swiping-left');
-          questionCardRef.current.classList.remove('swiping-right');
-        }
-      } else {
-        setSwiping(false);
-        questionCardRef.current.classList.remove('swiping-left', 'swiping-right');
-      }
-    }
-  };
-  
-  const onTouchEnd = () => {
-    // Не реагируем на окончание касания во время охлаждения
-    if (isCooldown) return;
-    
-    if (!touchStart || !touchEnd || submitting || fadeOut) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-    
-    if (isLeftSwipe && questions.length > 0) {
-      // Циклический переход: если текущий вопрос последний, переходим к первому
-      const nextIndex = currentQuestionIndex < questions.length - 1 ? currentQuestionIndex + 1 : 0;
-      setCurrentQuestionIndex(nextIndex);
-    } else if (isRightSwipe && questions.length > 0) {
-      // Циклический переход: если текущий вопрос первый, переходим к последнему
-      const prevIndex = currentQuestionIndex > 0 ? currentQuestionIndex - 1 : questions.length - 1;
-      setCurrentQuestionIndex(prevIndex);
-    }
-    
-    setSwiping(false);
-    setSwipeDirection(null);
-    
-    if (questionCardRef.current) {
-      questionCardRef.current.classList.remove('swiping', 'swiping-right', 'swiping-left');
     }
   };
 
@@ -655,26 +446,9 @@ export default function BlockQuestions() {
           <div className="error">Вопрос не найден. Пожалуйста, вернитесь к списку блоков.</div>
         ) : (
           <div className="question-container">
-            {/* Индикаторы прогресса */}
-            <div className="progress-indicators">
-              {Array.from({ length: questions.length }).map((_, index) => (
-                <div
-                  key={index}
-                  onClick={() => {
-                    if (fadeOut || isCooldown) return;
-                    setCurrentQuestionIndex(index);
-                  }}
-                  className={`progress-indicator ${index === currentQuestionIndex ? 'active' : ''} ${index < currentQuestionIndex ? 'completed' : ''}`}
-                />
-              ))}
-            </div>
-            
             <div 
               className={`question-card ${fadeOut ? 'fade-out' : 'fade-in'}`}
               ref={questionCardRef}
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
               style={{ background: 'linear-gradient(135deg, rgba(250, 245, 255, 0.8) 0%, rgba(243, 232, 255, 0.6) 100%)' }}
             >
               <div className="question-text-container">
@@ -686,7 +460,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-dont-want"
                 onClick={() => submitAnswer('no')}
-                disabled={submitting || fadeOut || isCooldown}
+                disabled={submitting || fadeOut}
               >
                 НЕ ХОЧУ
               </button>
@@ -694,7 +468,7 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-want"
                 onClick={() => submitAnswer('yes')}
-                disabled={submitting || fadeOut || isCooldown}
+                disabled={submitting || fadeOut}
               >
                 ХОЧУ
               </button>
@@ -704,29 +478,11 @@ export default function BlockQuestions() {
               <button 
                 className="btn btn-maybe"
                 onClick={() => submitAnswer('maybe')}
-                disabled={submitting || fadeOut || isCooldown}
+                disabled={submitting || fadeOut}
               >
                 не уверен(а)
               </button>
             </div>
-
-            <div className="swipe-hint">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'scaleX(-1)' }}>
-                <path d="M14 5L21 12M21 12L14 19M21 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <p>свайп чтобы пропустить вопрос</p>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 5L21 12M21 12L14 19M21 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            
-            {/* Индикатор охлаждения */}
-            {isCooldown && (
-              <div className="cooldown-indicator" style={{ 
-                width: `${cooldownProgress}%`,
-                opacity: cooldownProgress / 100
-              }}></div>
-            )}
           </div>
         )}
       </main>
@@ -748,39 +504,6 @@ export default function BlockQuestions() {
           justify-content: center;
           align-items: center;
           padding: 1rem;
-        }
-        
-        .progress-indicators {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          width: 100%;
-          padding: 0 10px;
-          margin-bottom: 24px;
-          margin-top: 20px;
-        }
-        
-        .progress-indicator {
-          height: 4px;
-          flex: 1;
-          max-width: 40px;
-          background-color: #E0E0E0;
-          border-radius: 2px;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
-          opacity: 0.5;
-        }
-        
-        .progress-indicator.active {
-          background: linear-gradient(90deg, var(--purple-500), var(--purple-600));
-          opacity: 1;
-          transform: scaleY(1.2);
-          box-shadow: 0 1px 3px rgba(168, 85, 247, 0.3);
-        }
-        
-        .progress-indicator.completed {
-          background: linear-gradient(90deg, var(--purple-700), var(--purple-800));
-          opacity: 0.8;
         }
         
         .loading {
@@ -821,7 +544,7 @@ export default function BlockQuestions() {
           width: 100%;
           height: 250px; /* Фиксированная высота */
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+          transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
           display: flex;
           justify-content: center;
           align-items: center;
@@ -906,13 +629,13 @@ export default function BlockQuestions() {
         .fade-out {
           opacity: 0;
           transform: translateY(-10px);
-          transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+          transition: opacity 0.2s ease-out, transform 0.2s ease-out;
         }
         
         .fade-in {
           opacity: 1;
           transform: translateY(0);
-          transition: opacity 0.1s ease-in, transform 0.1s ease-in;
+          transition: opacity 0.2s ease-in, transform 0.2s ease-in;
         }
         
         /* Стили для экрана завершения */
@@ -1069,47 +792,6 @@ export default function BlockQuestions() {
             opacity: 1;
             transform: translateY(0);
           }
-        }
-        
-        /* Добавляем стили для анимации свайпа */
-        .question-card.swiping {
-          transform: translateX(-30px);
-          opacity: 0.7;
-          transition: transform 0.15s ease-out, opacity 0.15s ease-out;
-        }
-        
-        /* Добавляем подсказку о свайпе */
-        .swipe-hint {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          margin-top: 0.5rem;
-          margin-bottom: 1rem;
-          color: var(--tg-theme-hint-color, #999999);
-          font-size: 0.9rem;
-          opacity: 0.8;
-        }
-        
-        .swipe-hint svg {
-          width: 16px;
-          height: 16px;
-        }
-
-        /* Добавляем стили для индикатора охлаждения */
-        .cooldown-indicator {
-          height: 4px;
-          background: linear-gradient(90deg, #FF6B6B, #FF4D8D);
-          border-radius: 2px;
-          margin-top: 0.5rem;
-          transition: width 0.05s linear, opacity 0.05s linear;
-          box-shadow: 0 0 4px rgba(255, 77, 141, 0.5);
-          position: absolute;
-          bottom: -10px;
-          left: 0;
-          width: 100%;
-          margin: 0;
-          z-index: 10;
         }
       `}</style>
     </div>
