@@ -271,8 +271,11 @@ export default function BlockQuestions() {
       // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
       const userId = user.dbId || user.id;
       
-      // Создаем копию массива вопросов для обновления
+      // Создаем копию массива вопросов для отслеживания изменений
       const updatedQuestions = [...questions];
+      
+      // Сохраняем ID обрабатываемого вопроса и его индекс
+      const processedQuestionId = currentQuestion.id;
       const answeredQuestionIndex = currentQuestionIndex;
       
       // Определяем следующий индекс до удаления вопроса
@@ -282,16 +285,15 @@ export default function BlockQuestions() {
         nextIndex = currentQuestionIndex >= updatedQuestions.length - 1 ? 0 : currentQuestionIndex + 1;
       }
       
-      // Сохраняем ID обрабатываемого вопроса для проверки при получении ответа
-      const processedQuestionId = currentQuestion.id;
+      // Запоминаем следующий вопрос для отображения
+      const nextQuestion = updatedQuestions.length > 1 ? updatedQuestions[nextIndex] : null;
       
-      // ИЗМЕНЕНИЕ: Сразу переключаемся на следующий вопрос без ожидания ответа сервера
-      // Быстрая анимация для перехода между вопросами
+      // Анимация исчезновения текущего вопроса
       setFadeOut(true);
       
-      // Устанавливаем следующий индекс сразу
+      // Устанавливаем следующий индекс и запускаем анимацию появления нового вопроса
       setTimeout(() => {
-        // Если у нас всего один вопрос, оставляем его на месте
+        // Меняем индекс только если у нас есть следующий вопрос
         if (updatedQuestions.length > 1) {
           setCurrentQuestionIndex(nextIndex);
         }
@@ -304,7 +306,7 @@ export default function BlockQuestions() {
       
       // Подготавливаем данные для отправки на сервер
       const answerData = {
-        questionId: parseInt(currentQuestion.id), // Явное преобразование к числу
+        questionId: parseInt(currentQuestion.id),
         userId: userId,
         text: answer // "yes", "no", "maybe"
       };
@@ -337,33 +339,10 @@ export default function BlockQuestions() {
         if (!response.ok) {
           console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
           
-          // Обработка ошибки "Вопрос не найден"
+          // В случае ошибки отображаем сообщение, но НЕ меняем список вопросов
           if (response.status === 404 && data.error === 'Вопрос не найден') {
-            // Проверяем, есть ли этот вопрос все еще в нашем списке
-            const questionStillExists = updatedQuestions.some(q => q.id === processedQuestionId);
-            
-            console.log('Вопрос все еще в списке:', questionStillExists);
-            
-            if (questionStillExists) {
-              // Удаляем проблемный вопрос из списка без изменения текущего отображения
-              const filteredQuestions = updatedQuestions.filter(q => q.id !== processedQuestionId);
-              
-              console.log('Отфильтрованные вопросы:', filteredQuestions.length);
-              
-              // Обновляем список вопросов
-              setQuestions(filteredQuestions);
-              
-              // Показываем уведомление пользователю
-              setError('Произошла ошибка при сохранении ответа. Вопрос не найден.');
-              
-              // Если вопросов больше нет, показываем сообщение
-              if (filteredQuestions.length === 0) {
-                setAllQuestionsAnswered(true);
-                createHearts(); // Создаем анимацию сердечек
-              }
-            }
+            setError('Произошла ошибка при сохранении ответа. Вопрос не найден.');
           } else {
-            // Другие ошибки
             setError(data.error || 'Ошибка при сохранении ответа');
           }
           
@@ -372,19 +351,39 @@ export default function BlockQuestions() {
         
         console.log('Ответ успешно сохранен:', data);
         
-        // Только если сохранение прошло успешно, удаляем вопрос из интерфейса
-        const filteredQuestions = updatedQuestions.filter(q => q.id !== processedQuestionId);
-        setQuestions(filteredQuestions);
-        
-        // Если это был последний вопрос, показываем сообщение о завершении
-        if (filteredQuestions.length === 0) {
-          setShowCompletionMessage(true);
-          createHearts(); // Создаем анимацию сердечек
+        // Обновляем массив вопросов, ТОЛЬКО если текущий вопрос не совпадает с отвеченным
+        // Это предотвращает исчезновение вопроса, который пользователь видит сейчас
+        if (questions.length > 0) {
+          // Создаем новый массив без отвеченного вопроса
+          const filteredQuestions = questions.filter(q => q.id !== processedQuestionId);
           
-          // Через 2.5 секунды переходим на главную страницу
-          setTimeout(() => {
-            router.push('/questions');
-          }, 2500);
+          // Проверяем, не удаляем ли мы вопрос, который сейчас отображается
+          const currentlyDisplayedQuestionId = currentQuestionIndex < questions.length ? 
+            questions[currentQuestionIndex].id : null;
+          
+          // Если отвеченный вопрос не тот, что сейчас отображается, безопасно обновляем массив
+          // ИЛИ если осталось 0 вопросов, то тоже обновляем
+          if (currentlyDisplayedQuestionId !== processedQuestionId || filteredQuestions.length === 0) {
+            setQuestions(filteredQuestions);
+            
+            // Если после удаления текущий индекс стал слишком большим, корректируем его
+            if (currentQuestionIndex >= filteredQuestions.length && filteredQuestions.length > 0) {
+              setCurrentQuestionIndex(0);
+            }
+            
+            // Если вопросов больше нет, показываем сообщение о завершении
+            if (filteredQuestions.length === 0) {
+              setShowCompletionMessage(true);
+              createHearts();
+              
+              // Через 2.5 секунды переходим на главную страницу
+              setTimeout(() => {
+                router.push('/questions');
+              }, 2500);
+            }
+          } else {
+            console.log('Пропускаем обновление вопросов, чтобы избежать исчезновения текущего вопроса');
+          }
         }
         
         // Инвалидируем кэш для обновления счетчика ответов
