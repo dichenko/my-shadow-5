@@ -171,6 +171,50 @@ export default function BlockQuestions() {
     setHearts(newHearts);
   };
 
+  // Функция для сброса ответов пользователя на вопросы блока
+  const resetBlockAnswers = async () => {
+    if (!user || !id) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Определяем, какой ID использовать: внутренний ID базы данных или Telegram ID
+      const userId = user.dbId || user.id;
+      
+      // Отправляем запрос на удаление ответов
+      const response = await fetch(`/api/delete-block-answers?userId=${userId}&blockId=${id}`, {
+        method: 'DELETE',
+      });
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Ошибка при парсинге ответа:', parseError);
+        throw new Error('Ошибка при получении ответа от сервера');
+      }
+      
+      if (!response.ok) {
+        console.error('Ошибка при удалении ответов. Статус:', response.status, 'Ответ:', data);
+        throw new Error(data.error || 'Не удалось удалить ответы');
+      }
+      
+      console.log('Ответы успешно удалены:', data);
+      
+      // Инвалидируем кэш для обновления счетчика ответов
+      queryClient.invalidateQueries(['blocks-with-questions']);
+      
+      // Перезагружаем страницу для получения новых вопросов
+      router.reload();
+      
+    } catch (err) {
+      console.error('Ошибка при удалении ответов:', err);
+      setError(err.message || 'Не удалось удалить ответы. Пожалуйста, попробуйте еще раз.');
+      setLoading(false);
+    }
+  };
+
   // Функция для отправки ответа
   const submitAnswer = async (answer) => {
     if (!user || !questions.length || submitting) return;
@@ -793,7 +837,19 @@ export default function BlockQuestions() {
             transform: translateY(0);
           }
         }
+        
+        .cooldown-indicator {
+          position: absolute;
+          bottom: -10px;
+          left: 0;
+          width: 100%;
+          margin: 0;
+          z-index: 10;
+          text-align: center;
+          font-size: 0.85rem;
+          color: var(--tg-theme-hint-color, #999999);
+        }
       `}</style>
     </div>
   );
-} 
+}
