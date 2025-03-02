@@ -122,17 +122,28 @@ export default function Settings() {
     }
   };
 
+  // Функция для перенаправления в Telegram бот
+  const contactDeveloper = () => {
+    if (typeof window !== 'undefined') {
+      window.open('https://t.me/QA_MyShadow_bot', '_blank');
+    }
+  };
+
   return (
     <div className="container">
       <Head>
         <title>Настройки | MyShadowApp</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
         <meta name="description" content="Настройки MyShadowApp" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
       </Head>
 
       <main className="main">
+        <h1 className="app-title">MyShadow</h1>
         <div className="settings-container">
-          <h1 className="settings-title">Настройки</h1>
+          <h2 className="settings-title">Настройки</h2>
           
           {message && (
             <div className="message success">{message}</div>
@@ -142,16 +153,15 @@ export default function Settings() {
             <div className="message error">{error}</div>
           )}
           
-          <div className="settings-section">
-            <h2 className="section-title">Управление данными</h2>
-            
+          <div className="settings-menu">
             {!showConfirmation ? (
               <button 
-                className="clear-answers-btn"
+                className="menu-item clear-answers-btn"
                 onClick={() => setShowConfirmation(true)}
                 disabled={isDeleting || !user}
               >
-                Очистить все ответы
+                <span className="icon">🗑️</span>
+                <span className="text">Очистить все ответы</span>
               </button>
             ) : (
               <div className="confirmation-box">
@@ -174,18 +184,15 @@ export default function Settings() {
                 </div>
               </div>
             )}
-          </div>
-          
-          <div className="settings-section danger-section">
-            <h2 className="section-title">Удаление аккаунта</h2>
             
             {!showAccountDeleteConfirmation ? (
               <button 
-                className="delete-account-btn"
+                className="menu-item delete-account-btn"
                 onClick={() => setShowAccountDeleteConfirmation(true)}
                 disabled={isDeletingAccount || !user}
               >
-                Удалить аккаунт
+                <span className="icon">⚠️</span>
+                <span className="text">Удалить аккаунт</span>
               </button>
             ) : (
               <div className="confirmation-box danger">
@@ -208,6 +215,14 @@ export default function Settings() {
                 </div>
               </div>
             )}
+            
+            <button 
+              className="menu-item contact-btn"
+              onClick={contactDeveloper}
+            >
+              <span className="icon">💬</span>
+              <span className="text">Написать разработчику</span>
+            </button>
           </div>
         </div>
       </main>
@@ -231,6 +246,19 @@ export default function Settings() {
           padding-bottom: 5rem;
         }
         
+        .app-title {
+          text-align: center;
+          font-size: 2.2rem;
+          font-weight: bold;
+          margin-bottom: 1.5rem;
+          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-family: 'Montserrat', sans-serif;
+          letter-spacing: 1px;
+        }
+        
         .settings-container {
           padding: 1rem;
           max-width: 600px;
@@ -241,71 +269,83 @@ export default function Settings() {
           font-size: 1.8rem;
           margin-bottom: 2rem;
           text-align: center;
-          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: var(--tg-theme-text-color, #000000);
           font-family: 'Montserrat', sans-serif;
-          letter-spacing: 1px;
+          letter-spacing: 0.5px;
           font-weight: bold;
         }
         
-        .settings-section {
+        .settings-menu {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
           margin-bottom: 2rem;
-          padding: 1.5rem;
-          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+        }
+        
+        .menu-item {
+          display: flex;
+          align-items: center;
+          padding: 1rem;
           border-radius: 12px;
-        }
-        
-        .danger-section {
-          background-color: rgba(255, 59, 48, 0.05);
-          border: 1px solid rgba(255, 59, 48, 0.2);
-        }
-        
-        .section-title {
-          font-size: 1.2rem;
-          margin-top: 0;
-          margin-bottom: 1.5rem;
-        }
-        
-        .clear-answers-btn, .delete-account-btn {
-          width: 100%;
-          padding: 0.8rem;
-          background-color: var(--tg-theme-destructive-text-color, #ff3b30);
-          color: white;
-          border: none;
-          border-radius: 8px;
+          background-color: var(--tg-theme-bg-color, #ffffff);
+          border: 1px solid var(--tg-theme-button-color, #5288c1);
+          color: var(--tg-theme-text-color, #000000);
           font-size: 1rem;
           cursor: pointer;
-          transition: opacity 0.2s;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .menu-item:hover, .menu-item:focus {
+          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .menu-item:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .menu-item .icon {
+          font-size: 1.5rem;
+          margin-right: 1rem;
+        }
+        
+        .menu-item .text {
+          flex: 1;
+        }
+        
+        .clear-answers-btn {
+          border-color: var(--tg-theme-button-color, #5288c1);
         }
         
         .delete-account-btn {
-          background-color: var(--tg-theme-destructive-text-color, #ff3b30);
+          border-color: var(--tg-theme-destructive-text-color, #ff0000);
+          color: var(--tg-theme-destructive-text-color, #ff0000);
         }
         
-        .clear-answers-btn:disabled, .delete-account-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
+        .contact-btn {
+          border-color: var(--tg-theme-button-color, #5288c1);
+          background-color: var(--tg-theme-button-color, #5288c1);
+          color: var(--tg-theme-button-text-color, #ffffff);
         }
         
         .confirmation-box {
-          background-color: rgba(255, 59, 48, 0.1);
+          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+          border-radius: 12px;
           padding: 1rem;
-          border-radius: 8px;
-          border: 1px solid var(--tg-theme-destructive-text-color, #ff3b30);
+          margin-bottom: 1rem;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
         .confirmation-box.danger {
-          background-color: rgba(255, 59, 48, 0.15);
-          border: 1px solid var(--tg-theme-destructive-text-color, #ff3b30);
+          border-left: 4px solid var(--tg-theme-destructive-text-color, #ff0000);
         }
         
         .confirmation-text {
-          margin-top: 0;
           margin-bottom: 1rem;
-          color: var(--tg-theme-destructive-text-color, #ff3b30);
-          font-weight: 500;
+          font-size: 0.9rem;
         }
         
         .confirmation-buttons {
@@ -314,47 +354,46 @@ export default function Settings() {
         }
         
         .confirm-btn, .cancel-btn {
-          flex: 1;
-          padding: 0.8rem;
-          border: none;
+          padding: 0.75rem 1rem;
           border-radius: 8px;
-          font-size: 1rem;
+          font-size: 0.9rem;
           cursor: pointer;
-          transition: opacity 0.2s;
+          flex: 1;
+          border: none;
+          transition: all 0.2s ease;
         }
         
         .confirm-btn {
-          background-color: var(--tg-theme-destructive-text-color, #ff3b30);
+          background-color: var(--tg-theme-destructive-text-color, #ff0000);
           color: white;
         }
         
         .cancel-btn {
-          background-color: var(--tg-theme-button-color, #2481cc);
-          color: white;
-        }
-        
-        .confirm-btn:disabled, .cancel-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
+          background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+          border: 1px solid var(--tg-theme-hint-color, #999999);
+          color: var(--tg-theme-text-color, #000000);
         }
         
         .message {
           padding: 1rem;
           border-radius: 8px;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
           text-align: center;
         }
         
         .success {
-          background-color: rgba(52, 199, 89, 0.1);
-          border: 1px solid rgba(52, 199, 89, 0.5);
-          color: #34c759;
+          background-color: rgba(76, 175, 80, 0.1);
+          color: #4caf50;
         }
         
         .error {
-          background-color: rgba(255, 59, 48, 0.1);
-          border: 1px solid rgba(255, 59, 48, 0.5);
-          color: var(--tg-theme-destructive-text-color, #ff3b30);
+          background-color: rgba(244, 67, 54, 0.1);
+          color: var(--tg-theme-destructive-text-color, #ff0000);
+        }
+        
+        button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       `}</style>
     </div>
