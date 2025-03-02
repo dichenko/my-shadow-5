@@ -22,8 +22,8 @@ export default function HowItWorksLink() {
   
   return (
     <>
-      <div className="how-it-works-link" onClick={openOnboarding}>
-        Как это работает?
+      <div className="floating-button" onClick={openOnboarding}>
+        <span className="question-mark">?</span>
       </div>
       
       {showOnboarding && (
@@ -33,20 +33,36 @@ export default function HowItWorksLink() {
       )}
       
       <style jsx>{`
-        .how-it-works-link {
-          text-align: center;
-          margin-top: 1rem;
-          padding: 0.5rem;
-          color: var(--tg-theme-link-color, var(--app-primary));
-          font-size: 0.9rem;
+        .floating-button {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #ff6b6b, #6b66ff);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
-          opacity: 0.8;
-          transition: opacity 0.2s ease;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+          z-index: 999;
+          transition: all 0.3s ease;
         }
         
-        .how-it-works-link:hover {
-          opacity: 1;
-          text-decoration: underline;
+        .floating-button:hover {
+          transform: scale(1.05);
+          box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+        }
+        
+        .floating-button:active {
+          transform: scale(0.95);
+        }
+        
+        .question-mark {
+          font-size: 24px;
+          font-weight: bold;
         }
         
         .onboarding-wrapper {
