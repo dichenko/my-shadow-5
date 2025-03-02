@@ -13,7 +13,8 @@ export async function fetchBlocksWithQuestions(userId) {
   
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error('Не удалось загрузить блоки вопросов');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Не удалось загрузить блоки вопросов');
   }
   
   return response.json();
@@ -29,29 +30,33 @@ export async function fetchBlock(blockId) {
   
   const response = await fetch(`/api/blocks?id=${blockId}`);
   if (!response.ok) {
-    throw new Error('Не удалось загрузить информацию о блоке');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Не удалось загрузить информацию о блоке');
   }
   
   return response.json();
 }
 
 /**
- * Получение вопросов блока
+ * Получение вопросов блока с поддержкой пагинации
  * @param {string|number} blockId - ID блока
  * @param {string|number} userId - ID пользователя (опционально)
- * @returns {Promise<Array>} - Массив вопросов
+ * @param {number} page - Номер страницы (по умолчанию 1)
+ * @param {number} limit - Количество элементов на странице (по умолчанию 50)
+ * @returns {Promise<Object>} - Объект с вопросами и информацией о пагинации
  */
-export async function fetchQuestions(blockId, userId) {
-  if (!blockId) return [];
+export async function fetchQuestions(blockId, userId, page = 1, limit = 50) {
+  if (!blockId) return { questions: [], pagination: { total: 0, page, limit, totalPages: 0 } };
   
-  let url = `/api/questions?blockId=${blockId}`;
+  let url = `/api/questions?blockId=${blockId}&page=${page}&limit=${limit}`;
   if (userId) {
     url += `&userId=${userId}`;
   }
   
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error('Не удалось загрузить вопросы блока');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Не удалось загрузить вопросы блока');
   }
   
   return response.json();
@@ -71,11 +76,13 @@ export async function submitAnswer(answerData) {
     body: JSON.stringify(answerData),
   });
   
+  const data = await response.json();
+  
   if (!response.ok) {
-    throw new Error('Не удалось отправить ответ');
+    throw new Error(data.error || 'Не удалось отправить ответ');
   }
   
-  return response.json();
+  return data;
 }
 
 /**
@@ -85,11 +92,13 @@ export async function submitAnswer(answerData) {
 export async function fetchPairCode() {
   const response = await fetch('/api/pair-code');
   
+  const data = await response.json();
+  
   if (!response.ok) {
-    throw new Error('Не удалось получить код пары');
+    throw new Error(data.error || 'Не удалось получить код пары');
   }
   
-  return response.json();
+  return data;
 }
 
 /**
@@ -99,11 +108,13 @@ export async function fetchPairCode() {
 export async function fetchMatchingDesires() {
   const response = await fetch('/api/matching-desires');
   
+  const data = await response.json();
+  
   if (!response.ok) {
-    throw new Error('Не удалось получить совпадающие желания');
+    throw new Error(data.error || 'Не удалось получить совпадающие желания');
   }
   
-  return response.json();
+  return data;
 }
 
 /**
@@ -120,11 +131,13 @@ export async function createPair(pairCode) {
     body: JSON.stringify({ pairCode }),
   });
   
+  const data = await response.json();
+  
   if (!response.ok) {
-    throw new Error('Не удалось создать пару');
+    throw new Error(data.error || 'Не удалось создать пару');
   }
   
-  return response.json();
+  return data;
 }
 
 /**
@@ -139,9 +152,27 @@ export async function deletePair() {
     },
   });
   
+  const data = await response.json();
+  
   if (!response.ok) {
-    throw new Error('Не удалось удалить пару');
+    throw new Error(data.error || 'Не удалось удалить пару');
   }
   
-  return response.json();
+  return data;
+}
+
+/**
+ * Пинг базы данных для предотвращения холодного старта
+ * @returns {Promise<Object>} - Результат пинга
+ */
+export async function pingDatabase() {
+  const response = await fetch('/api/keep-alive');
+  
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.error || 'Не удалось выполнить пинг базы данных');
+  }
+  
+  return data;
 } 

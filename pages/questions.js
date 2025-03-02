@@ -6,14 +6,15 @@ import { useUser } from '../utils/context';
 import BlocksList from '../components/BlocksList';
 import BottomMenu from '../components/BottomMenu';
 import HowItWorksLink from '../components/HowItWorksLink';
-import { useQuery } from '@tanstack/react-query';
-import { fetchBlocksWithQuestions } from '../utils/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchBlocksWithQuestions, pingDatabase, fetchQuestions } from '../utils/api';
 
 export default function Questions() {
   const { user } = useUser();
   const [telegramInitialized, setTelegramInitialized] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Используем React Query для загрузки блоков
   const { 
@@ -25,9 +26,41 @@ export default function Questions() {
     queryFn: () => fetchBlocksWithQuestions(user?.id || user?.tgId),
     // Не запрашиваем данные, пока не получим пользователя
     enabled: !!user,
-    // Данные блоков будут считаться свежими 10 минут
-    staleTime: 10 * 60 * 1000,
+    // Данные блоков будут считаться свежими 5 минут
+    staleTime: 5 * 60 * 1000,
+    // Повторяем запрос при ошибке
+    retry: 3,
+    // Увеличиваем интервал между повторными запросами
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Пингуем базу данных при загрузке страницы
+  useEffect(() => {
+    async function warmupDatabase() {
+      try {
+        await pingDatabase();
+        console.log('Database warmed up successfully');
+      } catch (error) {
+        console.error('Failed to warm up database:', error);
+      }
+    }
+    
+    warmupDatabase();
+  }, []);
+
+  // Предварительно загружаем данные для блоков
+  useEffect(() => {
+    if (blocks.length > 0 && user) {
+      // Предзагружаем первые 10 вопросов для каждого блока
+      blocks.forEach(block => {
+        queryClient.prefetchQuery({
+          queryKey: ['questions', block.id, user?.id || user?.tgId, 1],
+          queryFn: () => fetchQuestions(block.id, user?.id || user?.tgId, 1, 10),
+          staleTime: 5 * 60 * 1000,
+        });
+      });
+    }
+  }, [blocks, user, queryClient]);
 
   // Обрабатываем ошибку загрузки блоков
   useEffect(() => {

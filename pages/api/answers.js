@@ -27,30 +27,26 @@ export default async function handler(req, res) {
       }
 
       try {
-        // Проверяем, существует ли вопрос
-        const question = await prisma.question.findUnique({
-          where: { id: parseInt(questionId) }
-        });
+        // Проверяем существование вопроса и пользователя в одном запросе
+        const [question, userById, userByTgId] = await Promise.all([
+          prisma.question.findUnique({
+            where: { id: parseInt(questionId) }
+          }),
+          prisma.telegramUser.findUnique({
+            where: { id: parseInt(userId) }
+          }),
+          prisma.telegramUser.findUnique({
+            where: { tgId: parseInt(userId) }
+          })
+        ]);
 
         if (!question) {
           console.error('Вопрос не найден:', questionId);
           return res.status(404).json({ error: 'Вопрос не найден' });
         }
 
-        // Пытаемся найти пользователя двумя способами:
-        // 1. Сначала по id в базе данных
-        // 2. Если не найден, то пытаемся найти по tgId (userId может быть идентификатором Telegram)
-        let user = await prisma.telegramUser.findUnique({
-          where: { id: parseInt(userId) }
-        });
-
-        // Если пользователь не найден по id, пытаемся найти по tgId
-        if (!user) {
-          console.log('Пользователь не найден по id, пытаемся найти по tgId:', userId);
-          user = await prisma.telegramUser.findUnique({
-            where: { tgId: parseInt(userId) }
-          });
-        }
+        // Определяем пользователя
+        let user = userById || userByTgId;
 
         // Если пользователь все еще не найден, пытаемся использовать userId из localStorage
         if (!user && typeof window !== 'undefined') {
@@ -87,34 +83,34 @@ export default async function handler(req, res) {
         }
 
         // Проверяем, существует ли уже ответ на этот вопрос от этого пользователя
-        const existingAnswer = await prisma.answer.findFirst({
-          where: {
-            questionId: parseInt(questionId),
-            userId: user.id  // Используем найденный id из базы данных
+        // и обновляем или создаем ответ в одной транзакции
+        const answer = await prisma.$transaction(async (tx) => {
+          const existingAnswer = await tx.answer.findFirst({
+            where: {
+              questionId: parseInt(questionId),
+              userId: user.id
+            }
+          });
+
+          if (existingAnswer) {
+            // Обновляем существующий ответ
+            return tx.answer.update({
+              where: { id: existingAnswer.id },
+              data: { text }
+            });
+          } else {
+            // Создаем новый ответ
+            return tx.answer.create({
+              data: {
+                questionId: parseInt(questionId),
+                userId: user.id,
+                text
+              }
+            });
           }
         });
 
-        let answer;
-
-        if (existingAnswer) {
-          // Обновляем существующий ответ
-          answer = await prisma.answer.update({
-            where: { id: existingAnswer.id },
-            data: { text }
-          });
-          console.log('Обновлен существующий ответ:', answer);
-        } else {
-          // Создаем новый ответ
-          answer = await prisma.answer.create({
-            data: {
-              questionId: parseInt(questionId),
-              userId: user.id,  // Используем найденный id из базы данных
-              text
-            }
-          });
-          console.log('Создан новый ответ:', answer);
-        }
-
+        console.log('Ответ сохранен:', answer);
         return res.status(200).json(answer);
       } catch (dbError) {
         console.error('Ошибка при работе с базой данных:', dbError);
@@ -135,24 +131,61 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Получаем все ответы с информацией о вопросе и пользователе
-      const answers = await prisma.answer.findMany({
-        take: 100, // Ограничиваем количество результатов
-        orderBy: {
-          createdAt: 'desc' // Сортируем по дате создания (сначала новые)
-        },
-        include: {
-          question: {
-            include: {
-              block: true,
-              practice: true
-            }
+      const { page = '1', limit = '50', userId, questionId, blockId } = req.query;
+      
+      // Преобразуем параметры пагинации в числа
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+      
+      // Формируем условия фильтрации
+      let where = {};
+      
+      if (userId) {
+        where.userId = parseInt(userId);
+      }
+      
+      if (questionId) {
+        where.questionId = parseInt(questionId);
+      }
+      
+      if (blockId) {
+        where.question = {
+          blockId: parseInt(blockId)
+        };
+      }
+
+      // Получаем ответы с пагинацией и общее количество в одном запросе
+      const [answers, total] = await Promise.all([
+        prisma.answer.findMany({
+          where,
+          skip,
+          take: limitNum,
+          orderBy: {
+            createdAt: 'desc' // Сортируем по дате создания (сначала новые)
           },
-          user: true
+          include: {
+            question: {
+              include: {
+                block: true,
+                practice: true
+              }
+            },
+            user: true
+          }
+        }),
+        prisma.answer.count({ where })
+      ]);
+
+      return res.status(200).json({
+        answers,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum)
         }
       });
-
-      return res.status(200).json(answers);
     } catch (error) {
       console.error('Ошибка при получении ответов:', error);
       return res.status(500).json({ error: 'Не удалось получить ответы' });

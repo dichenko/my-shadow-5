@@ -5,22 +5,40 @@ export default async function handler(req, res) {
   // Обработка GET запроса - доступно без аутентификации
   if (req.method === 'GET') {
     try {
-      const { blockId, userId, includeAll } = req.query;
+      const { blockId, userId, includeAll, page = '1', limit = '50' } = req.query;
       
-      // Если не указан blockId, возвращаем все вопросы
+      // Преобразуем параметры пагинации в числа
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+      
+      // Если не указан blockId, возвращаем все вопросы с пагинацией
       if (!blockId) {
-        const questions = await prisma.question.findMany({
-          orderBy: [
-            { order: 'asc' },
-            { id: 'asc' }
-          ],
-          include: {
-            block: true,
-            practice: true
+        const [questions, total] = await Promise.all([
+          prisma.question.findMany({
+            orderBy: [
+              { order: 'asc' },
+              { id: 'asc' }
+            ],
+            include: {
+              block: true,
+              practice: true
+            },
+            skip,
+            take: limitNum
+          }),
+          prisma.question.count()
+        ]);
+        
+        return res.status(200).json({
+          questions,
+          pagination: {
+            total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.ceil(total / limitNum)
           }
         });
-        
-        return res.status(200).json(questions);
       }
       
       // Если указан blockId, фильтруем вопросы по блоку
@@ -28,8 +46,12 @@ export default async function handler(req, res) {
       
       // Если указан userId и не указан includeAll, исключаем вопросы, на которые пользователь уже ответил
       if (userId && includeAll !== 'true') {
-        // Находим пользователя
-        let user = await prisma.telegramUser.findUnique({
+        // Находим пользователя и его ответы в одном запросе
+        let user = null;
+        let answeredQuestionIds = [];
+        
+        // Пытаемся найти пользователя по id
+        user = await prisma.telegramUser.findUnique({
           where: { id: parseInt(userId) }
         });
         
@@ -41,8 +63,8 @@ export default async function handler(req, res) {
         }
         
         if (user) {
-          // Получаем ID вопросов, на которые пользователь уже ответил
-          const answeredQuestions = await prisma.answer.findMany({
+          // Получаем ID вопросов, на которые пользователь уже ответил, в одном запросе
+          const answers = await prisma.answer.findMany({
             where: {
               userId: user.id
             },
@@ -51,31 +73,47 @@ export default async function handler(req, res) {
             }
           });
           
-          const answeredQuestionIds = answeredQuestions.map(a => a.questionId);
+          answeredQuestionIds = answers.map(a => a.questionId);
           
           // Исключаем вопросы, на которые пользователь уже ответил
-          where = {
-            ...where,
-            id: {
-              notIn: answeredQuestionIds
-            }
-          };
+          if (answeredQuestionIds.length > 0) {
+            where = {
+              ...where,
+              id: {
+                notIn: answeredQuestionIds
+              }
+            };
+          }
         }
       }
       
-      const questions = await prisma.question.findMany({
-        where,
-        orderBy: [
-          { order: 'asc' },
-          { id: 'asc' }
-        ],
-        include: {
-          block: true,
-          practice: true
+      // Получаем вопросы и общее количество в одном запросе
+      const [questions, total] = await Promise.all([
+        prisma.question.findMany({
+          where,
+          orderBy: [
+            { order: 'asc' },
+            { id: 'asc' }
+          ],
+          include: {
+            block: true,
+            practice: true
+          },
+          skip,
+          take: limitNum
+        }),
+        prisma.question.count({ where })
+      ]);
+      
+      return res.status(200).json({
+        questions,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum)
         }
       });
-      
-      return res.status(200).json(questions);
     } catch (error) {
       console.error('Ошибка при получении вопросов:', error);
       return res.status(500).json({ error: 'Не удалось получить вопросы' });
@@ -98,28 +136,27 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Проверяем существование блока и практики
-      const block = await prisma.block.findUnique({
-        where: { id: parseInt(blockId) },
-      });
+      // Проверяем существование блока и практики в одном запросе
+      const [block, practice, maxOrderQuestion] = await Promise.all([
+        prisma.block.findUnique({
+          where: { id: parseInt(blockId) },
+        }),
+        prisma.practice.findUnique({
+          where: { id: parseInt(practiceId) },
+        }),
+        prisma.question.findFirst({
+          where: { blockId: parseInt(blockId) },
+          orderBy: { order: 'desc' },
+        })
+      ]);
       
       if (!block) {
         return res.status(400).json({ error: 'Блок не найден' });
       }
       
-      const practice = await prisma.practice.findUnique({
-        where: { id: parseInt(practiceId) },
-      });
-      
       if (!practice) {
         return res.status(400).json({ error: 'Практика не найдена' });
       }
-      
-      // Получаем максимальный порядок для вопросов в этом блоке
-      const maxOrderQuestion = await prisma.question.findFirst({
-        where: { blockId: parseInt(blockId) },
-        orderBy: { order: 'desc' },
-      });
       
       const newOrder = maxOrderQuestion ? maxOrderQuestion.order + 1 : 1;
       
@@ -151,25 +188,33 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Если указаны blockId или practiceId, проверяем их существование
+      // Если указаны blockId или practiceId, проверяем их существование в одном запросе
+      const checkPromises = [];
+      
       if (blockId) {
-        const block = await prisma.block.findUnique({
-          where: { id: parseInt(blockId) },
-        });
-        
-        if (!block) {
-          return res.status(400).json({ error: 'Блок не найден' });
-        }
+        checkPromises.push(
+          prisma.block.findUnique({
+            where: { id: parseInt(blockId) },
+          })
+        );
       }
       
       if (practiceId) {
-        const practice = await prisma.practice.findUnique({
-          where: { id: parseInt(practiceId) },
-        });
-        
-        if (!practice) {
-          return res.status(400).json({ error: 'Практика не найдена' });
-        }
+        checkPromises.push(
+          prisma.practice.findUnique({
+            where: { id: parseInt(practiceId) },
+          })
+        );
+      }
+      
+      const checkResults = await Promise.all(checkPromises);
+      
+      if (blockId && !checkResults[0]) {
+        return res.status(400).json({ error: 'Блок не найден' });
+      }
+      
+      if (practiceId && !checkResults[blockId ? 1 : 0]) {
+        return res.status(400).json({ error: 'Практика не найдена' });
       }
       
       // Обновляем вопрос
@@ -200,10 +245,19 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Проверяем, есть ли ответы на этот вопрос
-      const answersCount = await prisma.answer.count({
-        where: { questionId: parseInt(id) },
-      });
+      // Получаем информацию о вопросе и проверяем наличие ответов в одном запросе
+      const [question, answersCount] = await Promise.all([
+        prisma.question.findUnique({
+          where: { id: parseInt(id) },
+        }),
+        prisma.answer.count({
+          where: { questionId: parseInt(id) },
+        })
+      ]);
+      
+      if (!question) {
+        return res.status(404).json({ error: 'Вопрос не найден' });
+      }
       
       if (answersCount > 0) {
         return res.status(400).json({ 
@@ -211,32 +265,26 @@ export default async function handler(req, res) {
         });
       }
       
-      // Получаем информацию о вопросе перед удалением
-      const question = await prisma.question.findUnique({
-        where: { id: parseInt(id) },
-      });
-      
-      if (!question) {
-        return res.status(404).json({ error: 'Вопрос не найден' });
-      }
-      
       // Удаляем вопрос
       await prisma.question.delete({
         where: { id: parseInt(id) },
       });
       
-      // Перенумеруем оставшиеся вопросы в этом блоке
+      // Получаем оставшиеся вопросы в этом блоке
       const remainingQuestions = await prisma.question.findMany({
         where: { blockId: question.blockId },
         orderBy: { order: 'asc' },
       });
       
-      for (let i = 0; i < remainingQuestions.length; i++) {
-        await prisma.question.update({
-          where: { id: remainingQuestions[i].id },
-          data: { order: i + 1 },
-        });
-      }
+      // Обновляем порядок оставшихся вопросов в одной транзакции
+      await prisma.$transaction(
+        remainingQuestions.map((q, index) => 
+          prisma.question.update({
+            where: { id: q.id },
+            data: { order: index + 1 },
+          })
+        )
+      );
       
       return res.status(200).json({ success: true, message: 'Вопрос успешно удален' });
     } catch (error) {

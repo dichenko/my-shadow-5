@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../../lib/prisma';
 
 export default async function handler(req, res) {
   // Только GET запросы
@@ -18,7 +16,7 @@ export default async function handler(req, res) {
     // Преобразуем ID в число, если это строка
     const userIdNumber = parseInt(userId, 10);
     
-    // Находим пару пользователя
+    // Находим пару пользователя с включением информации о пользователях
     const userPair = await prisma.pairs.findFirst({
       where: {
         OR: [
@@ -64,58 +62,63 @@ export default async function handler(req, res) {
     const partnerId = userPair.user1Id === userIdNumber ? userPair.user2Id : userPair.user1Id;
     const partner = userPair.user1Id === userIdNumber ? userPair.user2 : userPair.user1;
 
-    // Получаем ответы пользователя
-    const userAnswers = await prisma.answers.findMany({
-      where: {
-        userId: userIdNumber
-      },
-      select: {
-        id: true,
-        questionId: true,
-        answer: true,
-        answeredAt: true,
-        question: {
-          select: {
-            id: true,
-            text: true,
-            type: true,
-            blockId: true,
-            question_number: true
+    // Получаем ответы обоих пользователей в одном запросе
+    const [userAnswers, partnerAnswers] = await Promise.all([
+      prisma.answers.findMany({
+        where: {
+          userId: userIdNumber
+        },
+        select: {
+          id: true,
+          questionId: true,
+          answer: true,
+          answeredAt: true,
+          question: {
+            select: {
+              id: true,
+              text: true,
+              type: true,
+              blockId: true,
+              question_number: true
+            }
           }
         }
-      }
-    });
+      }),
+      prisma.answers.findMany({
+        where: {
+          userId: partnerId
+        },
+        select: {
+          id: true,
+          questionId: true,
+          answer: true,
+          answeredAt: true,
+          question: {
+            select: {
+              id: true,
+              text: true,
+              type: true,
+              blockId: true,
+              question_number: true
+            }
+          }
+        }
+      })
+    ]);
 
-    // Получаем ответы партнера
-    const partnerAnswers = await prisma.answers.findMany({
-      where: {
-        userId: partnerId
-      },
-      select: {
-        id: true,
-        questionId: true,
-        answer: true,
-        answeredAt: true,
-        question: {
-          select: {
-            id: true,
-            text: true,
-            type: true,
-            blockId: true,
-            question_number: true
-          }
-        }
-      }
+    // Создаем Map для быстрого поиска ответов партнера по questionId
+    const partnerAnswersMap = new Map();
+    partnerAnswers.forEach(answer => {
+      partnerAnswersMap.set(answer.questionId, answer);
     });
 
     // Находим совпадения (вопросы, на которые ответили оба пользователя)
-    const matches = [];
-    
-    for (const userAnswer of userAnswers) {
-      const partnerAnswer = partnerAnswers.find(a => a.questionId === userAnswer.questionId);
-      
-      if (partnerAnswer) {
-        matches.push({
+    const matches = userAnswers
+      .filter(userAnswer => partnerAnswersMap.has(userAnswer.questionId))
+      .map(userAnswer => {
+        const partnerAnswer = partnerAnswersMap.get(userAnswer.questionId);
+        
+        return {
           questionId: userAnswer.questionId,
           questionText: userAnswer.question.text,
           questionType: userAnswer.question.type,
@@ -125,9 +128,11 @@ export default async function handler(req, res) {
           // Определяем, совпали ли ответы (для вопросов типа "yes_no")
           isMatch: userAnswer.question.type === 'yes_no' ? 
                    userAnswer.answer === partnerAnswer.answer && userAnswer.answer === 'yes' : null
-        });
-      }
-    }
+        };
+      });
+
+    // Подсчитываем статистику
+    const totalMatches = matches.filter(m => m.isMatch === true).length;
 
     return res.status(200).json({
       hasPair: true,
@@ -142,7 +147,7 @@ export default async function handler(req, res) {
       matches: matches,
       // Добавляем статистику
       stats: {
-        totalMatches: matches.filter(m => m.isMatch === true).length,
+        totalMatches,
         totalQuestions: matches.length,
         userAnsweredCount: userAnswers.length,
         partnerAnsweredCount: partnerAnswers.length

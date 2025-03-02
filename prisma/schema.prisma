@@ -20,6 +20,8 @@ model TelegramUser {
   partner       TelegramUser?  @relation("UserPartner", fields: [partnerId], references: [id], onDelete: SetNull)
   pairedUsers   TelegramUser[] @relation("UserPartner")
   answers       Answer[]
+
+  @@index([tgId])
 }
 
 model Practice {
@@ -33,6 +35,8 @@ model Block {
   name       String
   order      Int?
   questions  Question[]
+
+  @@index([order])
 }
 
 model Question {
@@ -46,6 +50,11 @@ model Question {
   block      Block     @relation(fields: [blockId], references: [id])
   practice   Practice  @relation(fields: [practiceId], references: [id])
   answers    Answer[]
+
+  @@index([blockId])
+  @@index([practiceId])
+  @@index([order])
+  @@index([blockId, order])
 }
 
 model Answer {
@@ -58,4 +67,9 @@ model Answer {
   
   question   Question     @relation(fields: [questionId], references: [id])
   user       TelegramUser @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([questionId])
+  @@index([userId, questionId])
+  @@index([createdAt])
 } 

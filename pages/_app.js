@@ -181,6 +181,29 @@ function AppWithLoading({ Component, pageProps }) {
     setOnboardingCompleted(true);
   };
   
+  // Добавляем эффект для периодического пинга базы данных
+  useEffect(() => {
+    // Функция для пинга базы данных
+    async function pingDatabase() {
+      try {
+        const response = await fetch('/api/keep-alive');
+        const data = await response.json();
+        console.log('Database keep-alive result:', data);
+      } catch (error) {
+        console.error('Database keep-alive failed:', error);
+      }
+    }
+
+    // Вызываем сразу при загрузке приложения
+    pingDatabase();
+
+    // Устанавливаем интервал для периодического пинга (каждые 5 минут)
+    const interval = setInterval(pingDatabase, 5 * 60 * 1000);
+
+    // Очищаем интервал при размонтировании компонента
+    return () => clearInterval(interval);
+  }, []);
+  
   // Показываем загрузочный экран, если данные еще не загружены
   if (userLoading) {
     return <LoadingScreen timeout={10000} />;
