@@ -267,11 +267,15 @@ export default function Pair() {
         <title>Моя пара | MyShadowApp</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
         <meta name="description" content="Моя пара в MyShadowApp" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
       </Head>
 
       <main className="main">
+        <h1 className="app-title">MyShadow</h1>
         <div className="pair-container">
-          <h1 className="pair-title">Моя пара</h1>
+          <h2 className="pair-title">Моя пара</h2>
           
           {isLoading && <div className="loading">Загрузка...</div>}
           
@@ -444,11 +448,24 @@ export default function Pair() {
         
         .main {
           flex: 1;
-          padding-top: 4rem;
+          padding-top: 2rem;
           display: flex;
           flex-direction: column;
           align-items: center;
           padding-bottom: 5rem;
+        }
+        
+        .app-title {
+          text-align: center;
+          font-size: 1.5rem;
+          font-weight: bold;
+          margin-bottom: 1.5rem;
+          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-family: 'Montserrat', sans-serif;
+          letter-spacing: 1px;
         }
         
         .pair-container {
@@ -461,18 +478,17 @@ export default function Pair() {
           font-size: 1.8rem;
           text-align: center;
           margin-bottom: 1.5rem;
-          background: linear-gradient(90deg, #ff6b6b, #6b66ff);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: var(--tg-theme-text-color, #000000);
           font-family: 'Montserrat', sans-serif;
-          letter-spacing: 1px;
+          letter-spacing: 0.5px;
           font-weight: bold;
         }
         
         h2 {
           font-size: 1.4rem;
           margin-bottom: 1rem;
+          font-family: 'Montserrat', sans-serif;
+          font-weight: 600;
         }
         
         .loading, .error, .success {

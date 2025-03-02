@@ -248,7 +248,7 @@ export default function Settings() {
         
         .app-title {
           text-align: center;
-          font-size: 2.2rem;
+          font-size: 1.5rem;
           font-weight: bold;
           margin-bottom: 1.5rem;
           background: linear-gradient(90deg, #ff6b6b, #6b66ff);
