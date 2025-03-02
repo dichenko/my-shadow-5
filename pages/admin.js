@@ -37,7 +37,28 @@ export default function Admin() {
         // Загружаем вопросы
         const questionsRes = await fetch('/api/questions');
         const questionsData = await questionsRes.json();
-        setQuestions(questionsData);
+        
+        // Проверяем формат данных и извлекаем массив вопросов
+        if (questionsData && typeof questionsData === 'object') {
+          // Если API вернул объект с полем questions (новый формат)
+          if (Array.isArray(questionsData.questions)) {
+            setQuestions(questionsData.questions);
+            console.log('Загружены вопросы (новый формат):', questionsData.questions.length);
+          } 
+          // Если API вернул массив напрямую (старый формат)
+          else if (Array.isArray(questionsData)) {
+            setQuestions(questionsData);
+            console.log('Загружены вопросы (старый формат):', questionsData.length);
+          }
+          // Если формат неожиданный, используем пустой массив
+          else {
+            console.error('Неожиданный формат данных вопросов:', questionsData);
+            setQuestions([]);
+          }
+        } else {
+          console.error('Данные вопросов не являются объектом:', questionsData);
+          setQuestions([]);
+        }
         
         setLoading(false);
       } catch (err) {
