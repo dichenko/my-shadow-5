@@ -59,7 +59,26 @@ export async function fetchQuestions(blockId, userId, page = 1, limit = 50) {
     throw new Error(errorData.error || 'Не удалось загрузить вопросы блока');
   }
   
-  return response.json();
+  const responseData = await response.json();
+  
+  // Проверяем формат данных: новый формат (объект с questions) или старый (массив)
+  if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
+    // Если получили объект с полем questions - это новый формат
+    if (Array.isArray(responseData.questions)) {
+      return responseData; // Возвращаем как есть
+    }
+  }
+  
+  // Если получили массив или другой формат, преобразуем в новый формат
+  return {
+    questions: Array.isArray(responseData) ? responseData : [],
+    pagination: {
+      total: Array.isArray(responseData) ? responseData.length : 0,
+      page: page,
+      limit: limit,
+      totalPages: Array.isArray(responseData) ? Math.ceil(responseData.length / limit) : 0
+    }
+  };
 }
 
 /**

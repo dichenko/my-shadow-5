@@ -1,6 +1,9 @@
 import Link from 'next/link';
 
 export default function BlocksList({ blocks = [] }) {
+  // Проверяем что блоки - это массив
+  const blocksArray = Array.isArray(blocks) ? blocks : [];
+  
   // Массив градиентов для блоков в минималистичном стиле
   const gradients = [
     `linear-gradient(135deg, var(--purple-100) 0%, var(--purple-200) 100%)`,
@@ -12,13 +15,13 @@ export default function BlocksList({ blocks = [] }) {
 
   return (
     <div className="blocks-container">      
-      {blocks.length === 0 ? (
+      {blocksArray.length === 0 ? (
         <div className="empty-state">
           <p>Блоки вопросов не найдены</p>
         </div>
       ) : (
         <div className="blocks-list">
-          {blocks.map((block, index) => (
+          {blocksArray.map((block, index) => (
             <Link href={`/block/${block.id}`} key={block.id} legacyBehavior>
               <a>
                 <div className="block-card" style={{

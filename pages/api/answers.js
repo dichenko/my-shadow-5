@@ -27,78 +27,117 @@ export default async function handler(req, res) {
       }
 
       try {
-        // Проверяем существование вопроса и пользователя в одном запросе
-        // Добавляем дополнительное логирование для отладки
-        console.log('Ищем вопрос с ID:', questionId, 'Тип:', typeof questionId);
-        
-        // Убедимся, что questionId корректно преобразуется в число
+        // Проверяем корректность формата questionId
         let questionIdInt;
         try {
           questionIdInt = parseInt(questionId, 10);
-          if (isNaN(questionIdInt)) {
-            console.error('Некорректный ID вопроса:', questionId);
+          if (isNaN(questionIdInt) || questionIdInt <= 0) {
+            console.error('Некорректный ID вопроса:', questionId, 'Тип:', typeof questionId);
             return res.status(400).json({ error: 'Некорректный ID вопроса' });
           }
         } catch (parseError) {
-          console.error('Ошибка при преобразовании ID вопроса:', parseError);
+          console.error('Ошибка при преобразовании ID вопроса:', parseError, 'Значение:', questionId);
           return res.status(400).json({ error: 'Ошибка при преобразовании ID вопроса' });
         }
         
-        const [question, userById, userByTgId] = await Promise.all([
-          prisma.question.findUnique({
-            where: { id: questionIdInt }
-          }),
-          prisma.telegramUser.findUnique({
-            where: { id: parseInt(userId, 10) }
-          }),
-          prisma.telegramUser.findUnique({
-            where: { tgId: parseInt(userId, 10) }
-          })
-        ]);
-
-        // Дополнительное логирование результата поиска вопроса
-        console.log('Результат поиска вопроса:', question ? 'Найден' : 'Не найден');
+        console.log('Ищем вопрос с ID:', questionIdInt, 'Тип:', typeof questionIdInt);
         
+        // Сначала проверяем существование вопроса
+        const question = await prisma.question.findUnique({
+          where: { id: questionIdInt }
+        });
+        
+        // Более подробное логирование результата поиска вопроса
         if (!question) {
-          console.error('Вопрос не найден:', questionId);
+          console.error(`Вопрос с ID ${questionIdInt} не найден в базе данных`);
           return res.status(404).json({ error: 'Вопрос не найден' });
         }
-
+        
+        console.log(`Вопрос с ID ${questionIdInt} найден:`, { 
+          id: question.id, 
+          blockId: question.blockId,
+          text: question.text?.substring(0, 30) + '...' // Логируем только начало текста для компактности
+        });
+        
+        // После проверки вопроса ищем пользователя
+        let userById = null;
+        let userByTgId = null;
+        
+        // Проверяем формат userId
+        let userIdInt;
+        try {
+          userIdInt = parseInt(userId, 10);
+          if (isNaN(userIdInt)) {
+            console.warn('Некорректный ID пользователя:', userId, 'Тип:', typeof userId);
+            // Продолжаем выполнение, так как userId может быть в другом формате
+          }
+        } catch (parseError) {
+          console.warn('Ошибка при преобразовании ID пользователя:', parseError);
+          // Продолжаем выполнение, возможно userId не числовой
+        }
+        
+        // Получаем пользователя из базы данных несколькими способами
+        if (!isNaN(userIdInt)) {
+          [userById, userByTgId] = await Promise.all([
+            prisma.telegramUser.findUnique({
+              where: { id: userIdInt }
+            }),
+            prisma.telegramUser.findUnique({
+              where: { tgId: userIdInt }
+            })
+          ]);
+        }
+        
         // Определяем пользователя
         let user = userById || userByTgId;
-
-        // Если пользователь все еще не найден, пытаемся использовать userId из localStorage
-        if (!user && typeof window !== 'undefined') {
-          const localStorageUserId = localStorage.getItem('userId');
-          if (localStorageUserId) {
-            console.log('Пытаемся найти пользователя по userId из localStorage:', localStorageUserId);
-            user = await prisma.telegramUser.findUnique({
-              where: { id: parseInt(localStorageUserId) }
-            });
-          }
-        }
-
+        
         if (!user) {
           console.error('Пользователь не найден ни по id, ни по tgId:', userId);
           
           // Если пользователь не найден, попытаемся создать его на основе Telegram ID
           try {
-            console.log('Попытка создать пользователя с tgId:', userId);
-            user = await prisma.telegramUser.create({
-              data: {
-                tgId: parseInt(userId),
-                firstVisit: new Date(),
-                lastVisit: new Date(),
-                visitCount: 1
-              }
-            });
-            console.log('Создан новый пользователь:', user);
+            if (!isNaN(userIdInt)) {
+              console.log('Попытка создать пользователя с tgId:', userIdInt);
+              user = await prisma.telegramUser.create({
+                data: {
+                  tgId: userIdInt,
+                  firstVisit: new Date(),
+                  lastVisit: new Date(),
+                  visitCount: 1
+                }
+              });
+              console.log('Создан новый пользователь:', user);
+            } else {
+              return res.status(400).json({ error: 'Некорректный ID пользователя для создания' });
+            }
           } catch (createError) {
             console.error('Ошибка при создании пользователя:', createError);
             return res.status(404).json({ 
               error: 'Пользователь не найден. Пожалуйста, перезагрузите приложение или попробуйте войти заново.' 
             });
           }
+        }
+
+        // Проверяем наличие пользователя после всех попыток
+        if (!user) {
+          return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Проверяем, не отвечал ли пользователь уже на этот вопрос
+        const existingAnswer = await prisma.answer.findFirst({
+          where: {
+            userId: user.id,
+            questionId: questionIdInt
+          }
+        });
+
+        if (existingAnswer) {
+          console.log('Пользователь уже отвечал на этот вопрос:', existingAnswer);
+          // Возвращаем успешный ответ, чтобы клиент мог продолжить работу
+          return res.status(200).json({ 
+            message: 'Ответ уже существует', 
+            id: existingAnswer.id 
+          });
         }
 
         // Проверяем, существует ли уже ответ на этот вопрос от этого пользователя

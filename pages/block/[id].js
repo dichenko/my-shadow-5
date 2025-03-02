@@ -84,7 +84,31 @@ export default function BlockQuestions() {
           throw new Error('Не удалось загрузить все вопросы блока');
         }
         const allQuestionsData = await allQuestionsResponse.json();
-        setTotalQuestions(allQuestionsData.length);
+        
+        // Проверяем формат данных и извлекаем массив вопросов
+        let allQuestions = [];
+        if (allQuestionsData && typeof allQuestionsData === 'object') {
+          // Если API вернул объект с полем questions (новый формат)
+          if (Array.isArray(allQuestionsData.questions)) {
+            allQuestions = allQuestionsData.questions;
+            console.log('Загружены все вопросы (новый формат):', allQuestions.length);
+          } 
+          // Если API вернул массив напрямую (старый формат)
+          else if (Array.isArray(allQuestionsData)) {
+            allQuestions = allQuestionsData;
+            console.log('Загружены все вопросы (старый формат):', allQuestions.length);
+          }
+          // Если формат неожиданный, используем пустой массив
+          else {
+            console.error('Неожиданный формат данных всех вопросов:', allQuestionsData);
+            allQuestions = [];
+          }
+        } else {
+          console.error('Данные всех вопросов не являются объектом:', allQuestionsData);
+          allQuestions = [];
+        }
+        
+        setTotalQuestions(allQuestions.length);
         
         // Получаем вопросы блока, исключая те, на которые пользователь уже ответил
         let url = `/api/questions?blockId=${id}`;
@@ -99,10 +123,34 @@ export default function BlockQuestions() {
           throw new Error('Не удалось загрузить вопросы блока');
         }
         const questionsData = await questionsResponse.json();
-        setQuestions(questionsData);
+        
+        // Проверяем формат данных и извлекаем массив вопросов
+        let filteredQuestions = [];
+        if (questionsData && typeof questionsData === 'object') {
+          // Если API вернул объект с полем questions (новый формат)
+          if (Array.isArray(questionsData.questions)) {
+            filteredQuestions = questionsData.questions;
+            console.log('Загружены вопросы для пользователя (новый формат):', filteredQuestions.length);
+          } 
+          // Если API вернул массив напрямую (старый формат)
+          else if (Array.isArray(questionsData)) {
+            filteredQuestions = questionsData;
+            console.log('Загружены вопросы для пользователя (старый формат):', filteredQuestions.length);
+          }
+          // Если формат неожиданный, используем пустой массив
+          else {
+            console.error('Неожиданный формат данных вопросов:', questionsData);
+            filteredQuestions = [];
+          }
+        } else {
+          console.error('Данные вопросов не являются объектом:', questionsData);
+          filteredQuestions = [];
+        }
+        
+        setQuestions(filteredQuestions);
         
         // Если нет вопросов, на которые пользователь еще не ответил, показываем сообщение
-        if (questionsData.length === 0 && allQuestionsData.length > 0) {
+        if (filteredQuestions.length === 0 && allQuestions.length > 0) {
           setAllQuestionsAnswered(true);
           createHearts(); // Создаем анимацию сердечек
         }
@@ -206,6 +254,13 @@ export default function BlockQuestions() {
     
     const currentQuestion = questions[currentQuestionIndex];
     
+    // Проверяем наличие текущего вопроса и его ID
+    if (!currentQuestion || !currentQuestion.id) {
+      console.error('Ошибка: вопрос не найден или некорректный ID', currentQuestionIndex, questions);
+      setError('Произошла ошибка. Вопрос не найден. Обновите страницу и попробуйте снова.');
+      return;
+    }
+    
     try {
       setSubmitting(true);
       setError(null);
@@ -232,18 +287,17 @@ export default function BlockQuestions() {
       
       // Подготавливаем данные для отправки на сервер
       const answerData = {
-        questionId: currentQuestion.id,
+        questionId: parseInt(currentQuestion.id), // Явное преобразование к числу
         userId: userId,
         text: answer // "yes", "no", "maybe"
       };
       
       console.log('Отправляем ответ:', answerData);
       
-      // Немедленно обновляем UI, не дожидаясь ответа сервера
-      // Удаляем отвеченный вопрос из списка
-      updatedQuestions.splice(answeredQuestionIndex, 1);
+      // Сохраняем ID обрабатываемого вопроса для проверки при получении ответа
+      const processedQuestionId = currentQuestion.id;
       
-      // Запускаем отправку ответа на сервер в фоновом режиме
+      // Запускаем отправку ответа на сервер
       fetch('/api/answers', {
         method: 'POST',
         headers: {
@@ -254,67 +308,73 @@ export default function BlockQuestions() {
       .then(async (response) => {
         let data;
         try {
-          data = await response.json();
+          const responseText = await response.text();
+          try {
+            data = JSON.parse(responseText);
+          } catch (jsonError) {
+            console.error('Ошибка при парсинге JSON:', jsonError, 'Текст ответа:', responseText);
+            data = { error: 'Ошибка при парсинге ответа сервера' };
+          }
         } catch (parseError) {
-          console.error('Ошибка при парсинге ответа:', parseError);
-          return;
+          console.error('Ошибка при чтении ответа:', parseError);
+          data = { error: 'Не удалось прочитать ответ сервера' };
         }
         
         if (!response.ok) {
           console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
           
-          // Если вопрос не найден, показываем уведомление пользователю
+          // Обработка ошибки "Вопрос не найден"
           if (response.status === 404 && data.error === 'Вопрос не найден') {
-            // Обновляем список вопросов, чтобы исключить проблемный вопрос
-            queryClient.invalidateQueries(['questions', id, userId]);
+            // Проверяем, есть ли этот вопрос все еще в нашем списке
+            const questionStillExists = updatedQuestions.some(q => q.id === processedQuestionId);
             
-            // Показываем уведомление пользователю
-            setError('Произошла ошибка при сохранении ответа. Пожалуйста, попробуйте другой вопрос.');
+            console.log('Вопрос все еще в списке:', questionStillExists);
             
-            // Переходим к следующему вопросу, если он есть
-            if (updatedQuestions.length > 0) {
-              setQuestions(updatedQuestions);
-              setCurrentQuestionIndex(nextIndex < updatedQuestions.length ? nextIndex : 0);
-            } else {
+            if (questionStillExists) {
+              // Удаляем проблемный вопрос из списка
+              const filteredQuestions = updatedQuestions.filter(q => q.id !== processedQuestionId);
+              
+              console.log('Отфильтрованные вопросы:', filteredQuestions.length);
+              
+              // Обновляем список вопросов
+              setQuestions(filteredQuestions);
+              
+              // Корректируем индекс текущего вопроса
+              const newIndex = Math.min(nextIndex, filteredQuestions.length - 1);
+              setCurrentQuestionIndex(newIndex >= 0 ? newIndex : 0);
+              
+              // Показываем уведомление пользователю
+              setError('Произошла ошибка при сохранении ответа. Вопрос не найден.');
+              
               // Если вопросов больше нет, показываем сообщение
-              setAllQuestionsAnswered(true);
+              if (filteredQuestions.length === 0) {
+                setAllQuestionsAnswered(true);
+                createHearts(); // Создаем анимацию сердечек
+              } else {
+                // Запускаем анимацию появления нового вопроса
+                setTimeout(() => {
+                  setFadeOut(false);
+                }, 150);
+              }
             }
+          } else {
+            // Другие ошибки
+            setError(data.error || 'Ошибка при сохранении ответа');
+            // Отменяем анимацию исчезновения
+            setFadeOut(false);
           }
+          
           return;
         }
         
         console.log('Ответ успешно сохранен:', data);
         
-        // Инвалидируем кэш для обновления счетчика ответов
-        queryClient.invalidateQueries(['blocks-with-questions']);
-      })
-      .catch(err => {
-        console.error('Ошибка при отправке ответа:', err);
-        // Ошибка при отправке не должна влиять на UX, просто логируем
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
-      
-      // Немедленно обновляем UI, не дожидаясь завершения запроса
-      // Если это был последний вопрос, показываем сообщение о завершении
-      if (updatedQuestions.length === 0) {
-        // Минимальная задержка для анимации исчезновения
-        setTimeout(() => {
-          setShowCompletionMessage(true);
-          createHearts(); // Создаем анимацию сердечек
-          
-          // Через 2.5 секунды переходим на главную страницу
-          setTimeout(() => {
-            router.push('/questions');
-          }, 2500);
-        }, 150); // Увеличиваем задержку, чтобы учесть время кулдауна
-      } else {
-        // Обновляем список вопросов, удаляя отвеченный
-        setQuestions(updatedQuestions);
+        // Только если сохранение прошло успешно, удаляем вопрос из интерфейса
+        const filteredQuestions = updatedQuestions.filter(q => q.id !== processedQuestionId);
+        setQuestions(filteredQuestions);
         
         // Корректируем индекс, если необходимо
-        if (answeredQuestionIndex >= updatedQuestions.length) {
+        if (answeredQuestionIndex >= filteredQuestions.length) {
           setCurrentQuestionIndex(0);
         } else if (answeredQuestionIndex < nextIndex && nextIndex > 0) {
           // Если удаленный вопрос был перед следующим, корректируем индекс
@@ -323,12 +383,38 @@ export default function BlockQuestions() {
           setCurrentQuestionIndex(nextIndex);
         }
         
-        // Задержка для анимации исчезновения (увеличена для учета времени кулдауна)
-        setTimeout(() => {
-          // Запускаем анимацию появления нового вопроса
-          setFadeOut(false);
-        }, 150);
-      }
+        // Если это был последний вопрос, показываем сообщение о завершении
+        if (filteredQuestions.length === 0) {
+          // Минимальная задержка для анимации исчезновения
+          setTimeout(() => {
+            setShowCompletionMessage(true);
+            createHearts(); // Создаем анимацию сердечек
+            
+            // Через 2.5 секунды переходим на главную страницу
+            setTimeout(() => {
+              router.push('/questions');
+            }, 2500);
+          }, 150);
+        } else {
+          // Задержка для анимации исчезновения (увеличена для учета времени кулдауна)
+          setTimeout(() => {
+            // Запускаем анимацию появления нового вопроса
+            setFadeOut(false);
+          }, 150);
+        }
+        
+        // Инвалидируем кэш для обновления счетчика ответов
+        queryClient.invalidateQueries(['blocks-with-questions']);
+      })
+      .catch(err => {
+        console.error('Ошибка при отправке ответа:', err);
+        setError('Сетевая ошибка. Пожалуйста, проверьте подключение и попробуйте снова.');
+        // Отменяем анимацию исчезновения
+        setFadeOut(false);
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
       
     } catch (err) {
       console.error('Ошибка при подготовке отправки ответа:', err);

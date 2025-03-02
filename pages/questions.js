@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { initTelegramApp, saveUserData, setupBackButton, setupHeader } from '../utils/telegram';
@@ -18,7 +18,7 @@ export default function Questions() {
 
   // Используем React Query для загрузки блоков
   const { 
-    data: blocks = [], 
+    data: blocksData = [], 
     isLoading: blocksLoading, 
     error: blocksError 
   } = useQuery({
@@ -33,6 +33,18 @@ export default function Questions() {
     // Увеличиваем интервал между повторными запросами
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Проверяем формат данных и обеспечиваем, что blocks всегда массив
+  const blocks = useMemo(() => {
+    if (blocksData && Array.isArray(blocksData)) {
+      return blocksData;
+    } else if (blocksData && typeof blocksData === 'object' && Array.isArray(blocksData.blocks)) {
+      return blocksData.blocks;
+    } else {
+      console.error('Неожиданный формат данных блоков:', blocksData);
+      return [];
+    }
+  }, [blocksData]);
 
   // Пингуем базу данных при загрузке страницы
   useEffect(() => {
