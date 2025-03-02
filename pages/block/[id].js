@@ -237,6 +237,8 @@ export default function BlockQuestions() {
         text: answer // "yes", "no", "maybe"
       };
       
+      console.log('Отправляем ответ:', answerData);
+      
       // Немедленно обновляем UI, не дожидаясь ответа сервера
       // Удаляем отвеченный вопрос из списка
       updatedQuestions.splice(answeredQuestionIndex, 1);
@@ -260,6 +262,24 @@ export default function BlockQuestions() {
         
         if (!response.ok) {
           console.error('Ошибка при отправке ответа. Статус:', response.status, 'Ответ:', data);
+          
+          // Если вопрос не найден, показываем уведомление пользователю
+          if (response.status === 404 && data.error === 'Вопрос не найден') {
+            // Обновляем список вопросов, чтобы исключить проблемный вопрос
+            queryClient.invalidateQueries(['questions', id, userId]);
+            
+            // Показываем уведомление пользователю
+            setError('Произошла ошибка при сохранении ответа. Пожалуйста, попробуйте другой вопрос.');
+            
+            // Переходим к следующему вопросу, если он есть
+            if (updatedQuestions.length > 0) {
+              setQuestions(updatedQuestions);
+              setCurrentQuestionIndex(nextIndex < updatedQuestions.length ? nextIndex : 0);
+            } else {
+              // Если вопросов больше нет, показываем сообщение
+              setAllQuestionsAnswered(true);
+            }
+          }
           return;
         }
         

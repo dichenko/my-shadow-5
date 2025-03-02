@@ -68,18 +68,39 @@ export async function fetchQuestions(blockId, userId, page = 1, limit = 50) {
  * @returns {Promise<Object>} - Результат отправки
  */
 export async function submitAnswer(answerData) {
+  // Проверяем корректность данных перед отправкой
+  if (!answerData.questionId || !answerData.userId || !answerData.text) {
+    throw new Error('Неполные данные для отправки ответа');
+  }
+  
+  // Убеждаемся, что questionId - это число
+  const questionId = typeof answerData.questionId === 'string' 
+    ? parseInt(answerData.questionId, 10) 
+    : answerData.questionId;
+    
+  if (isNaN(questionId)) {
+    throw new Error('Некорректный ID вопроса');
+  }
+  
+  // Создаем копию данных с гарантированно числовым questionId
+  const validatedData = {
+    ...answerData,
+    questionId
+  };
+  
   const response = await fetch('/api/answers', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(answerData),
+    body: JSON.stringify(validatedData),
   });
   
   const data = await response.json();
   
   if (!response.ok) {
-    throw new Error(data.error || 'Не удалось отправить ответ');
+    // Добавляем статус ответа к сообщению об ошибке для лучшей диагностики
+    throw new Error(`${data.error || 'Не удалось отправить ответ'} (Статус: ${response.status})`);
   }
   
   return data;

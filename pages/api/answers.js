@@ -28,18 +28,37 @@ export default async function handler(req, res) {
 
       try {
         // Проверяем существование вопроса и пользователя в одном запросе
+        // Добавляем дополнительное логирование для отладки
+        console.log('Ищем вопрос с ID:', questionId, 'Тип:', typeof questionId);
+        
+        // Убедимся, что questionId корректно преобразуется в число
+        let questionIdInt;
+        try {
+          questionIdInt = parseInt(questionId, 10);
+          if (isNaN(questionIdInt)) {
+            console.error('Некорректный ID вопроса:', questionId);
+            return res.status(400).json({ error: 'Некорректный ID вопроса' });
+          }
+        } catch (parseError) {
+          console.error('Ошибка при преобразовании ID вопроса:', parseError);
+          return res.status(400).json({ error: 'Ошибка при преобразовании ID вопроса' });
+        }
+        
         const [question, userById, userByTgId] = await Promise.all([
           prisma.question.findUnique({
-            where: { id: parseInt(questionId) }
+            where: { id: questionIdInt }
           }),
           prisma.telegramUser.findUnique({
-            where: { id: parseInt(userId) }
+            where: { id: parseInt(userId, 10) }
           }),
           prisma.telegramUser.findUnique({
-            where: { tgId: parseInt(userId) }
+            where: { tgId: parseInt(userId, 10) }
           })
         ]);
 
+        // Дополнительное логирование результата поиска вопроса
+        console.log('Результат поиска вопроса:', question ? 'Найден' : 'Не найден');
+        
         if (!question) {
           console.error('Вопрос не найден:', questionId);
           return res.status(404).json({ error: 'Вопрос не найден' });
@@ -87,7 +106,7 @@ export default async function handler(req, res) {
         const answer = await prisma.$transaction(async (tx) => {
           const existingAnswer = await tx.answer.findFirst({
             where: {
-              questionId: parseInt(questionId),
+              questionId: questionIdInt,
               userId: user.id
             }
           });
@@ -102,7 +121,7 @@ export default async function handler(req, res) {
             // Создаем новый ответ
             return tx.answer.create({
               data: {
-                questionId: parseInt(questionId),
+                questionId: questionIdInt,
                 userId: user.id,
                 text
               }
