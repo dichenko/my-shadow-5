@@ -270,7 +270,9 @@ export default function BlockQuestions() {
         
         // Если вопросов больше нет, показываем сообщение о завершении
         if (filteredQuestions.length === 0) {
+          console.log('Все вопросы отвечены, показываем поздравление');
           setShowCompletionMessage(true);
+          setAllQuestionsAnswered(true);
           createHearts();
           
           // Через 2.5 секунды переходим на главную страницу
@@ -411,7 +413,7 @@ export default function BlockQuestions() {
           <div className="empty-state">
             <p>В этом блоке пока нет вопросов</p>
           </div>
-        ) : allQuestionsAnswered ? (
+        ) : allQuestionsAnswered || showCompletionMessage || questions.length === 0 ? (
           <div className="completion-container">
             <div className="completion-card">
               <h2>Поздравляем!</h2>
@@ -451,26 +453,6 @@ export default function BlockQuestions() {
                 </div>
               )}
               
-              {hearts.map(heart => (
-                <div 
-                  key={heart.id}
-                  className="heart"
-                  style={{
-                    left: `${heart.left}%`,
-                    width: `${heart.size}px`,
-                    height: `${heart.size}px`,
-                    backgroundColor: heart.color,
-                    animationDuration: `${heart.animationDuration}s`
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        ) : showCompletionMessage ? (
-          <div className="completion-container">
-            <div className="completion-card">
-              <h2>Поздравляем!</h2>
-              <p>Вы ответили на все вопросы в этом блоке</p>
               {hearts.map(heart => (
                 <div 
                   key={heart.id}
