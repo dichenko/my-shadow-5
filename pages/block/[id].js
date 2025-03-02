@@ -811,6 +811,8 @@ export default function BlockQuestions() {
           align-items: center;
           width: 100%;
           max-width: 500px;
+          position: relative;
+          padding-bottom: 15px;
         }
         
         .question-card {
@@ -1103,6 +1105,12 @@ export default function BlockQuestions() {
           margin-top: 0.5rem;
           transition: width 0.05s linear, opacity 0.05s linear;
           box-shadow: 0 0 4px rgba(255, 77, 141, 0.5);
+          position: absolute;
+          bottom: -10px;
+          left: 0;
+          width: 100%;
+          margin: 0;
+          z-index: 10;
         }
       `}</style>
     </div>
