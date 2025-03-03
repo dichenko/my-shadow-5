@@ -459,7 +459,7 @@ export default function Pair() {
           text-align: center;
           font-size: 1.5rem;
           font-weight: bold;
-          margin-bottom: 1.5rem;
+          margin-bottom: 2rem;
           background: linear-gradient(90deg, #ff6b6b, #6b66ff);
           -webkit-background-clip: text;
           background-clip: text;

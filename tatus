@@ -1,0 +1,102 @@
+[33mabf8c7a[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Remove client-side error logging functionality
+[33mc6ef219[m Fix error handling in client-side error logging
+[33mde0ffc6[m Fix bugs
+[33m38f83ab[m Optimize data loading and caching for better performance
+[33mf526c07[m Add MyShadow title to pair page and update heading styles
+[33m03eb31a[m Improve settings page design with MyShadow title and contact developer button
+[33me48f3eb[m Fix completion message display after answering the last question
+[33m8114515[m Fix JSX structure and add absolute positioning for cooldown indicator
+[33md865fad[m Simplify question answering interface by removing cooldown, swipe and progress indicators
+[33mea6740d[m Fix disappearing question after cooldown period
+[33m54fc14d[m Fix cooldown indicator positioning to prevent layout shift
+[33mf628569[m Fix question display during cooldown period
+[33mc7e290a[m Fix map is not a function error by handling different API response formats
+[33madf04b3[m Fix TypeError in admin page caused by incorrect handling of questions data format
+[33m6612b33[m Fix question not found error in answers API
+[33m531a1ef[m Optimize database performance and application speed
+[33m38fc2ee[m Увеличены отступы на главной странице с блоками
+[33me5f9cca[m Улучшение видимости плавающей кнопки 'Как это работает'
+[33m71ccfb4[m Convert 'How it works' link to a floating button
+[33m7598b8e[m Fix onboarding and age verification for new users
+[33m75fbec2[m Improve onboarding UI: adjust top padding, increase bottom spacing for dots, hide bottom menu during onboarding
+[33m1101664[m Fix API endpoint for incrementing visit count with correct Prisma implementation
+[33m81be7e6[m Fix onboarding loop issue: add localStorage and sessionStorage persistence, increment visit counter
+[33m94fef0e[m Adjust onboarding cards position: add 25vh top padding and reduce height to 70vh
+[33m06bbf46[m Apply consistent gradient style to all MyShadow logos across the app
+[33m9ef15c3[m Fix DOT indicators in onboarding when opened from 'How it works' link
+[33m66bdbce[m Update user registration flow and onboarding UI: save user only after age verification and improve stories design
+[33m27e361b[m Enhance onboarding UI with purple background, frames and shadows
+[33m6848811[m Swap 'ХОЧУ' and 'НЕ ХОЧУ' buttons order in question card
+[33m7189106[m Add onboarding for new users and 'How it works' link
+[33m34af6d5[m Fix copy button position and functionality in pair page
+[33mb18fcfd[m Fix admin panel access and application initialization
+[33meb97450[m Improve admin panel access without Telegram user data
+[33m3cfd890[m Fix admin panel access without Telegram user data
+[33mc0bc61f[m Add enhanced logging for admin authentication debugging
+[33m6dce10b[m Fix copy button position when clicked
+[33m8556fcf[m Integrate Tailwind purple color palette into application design
+[33mba49f31[m Fix copy button position when clicked
+[33m2145453[m Fix age verification logic to only prompt new users on first visit
+[33m753711c[m Improve question page UI: reposition cooldown indicator, redesign buttons, update swipe hint, add gradient to question card
+[33m7fb62a0[m Fix age verification to only show for first-time users
+[33m1bfa935[m Add account deletion functionality
+[33m24a486e[m Optimize age verification to only check new users
+[33mc790992[m Fix age verification error handling to improve user experience
+[33m610c447[m Add 18+ age verification for application access
+[33m70495ae[m Add welcome image
+[33m5e3c154[m Add loading screen with animated image and preload user data
+[33mccc5bf0[m Add enhanced warning message when deleting pair connection
+[33mc42eb5f[m Fix progress indicators and card removal logic with cooldown feature
+[33m3be6ef0[m Add cooldown time with visual indicator after answering questions
+[33m4304c05[m Add cyclic swipe functionality to MatchSwiper and BlockQuestions components
+[33md7a09e6[m Optimize question answering flow to eliminate UI delay between questions
+[33m4181d8c[m Fix special messages display for all match card types
+[33mbf052d2[m Fix swipe functionality in match cards viewer
+[33m3367078[m Improve match cards display with special messages for matching answers
+[33mcb8e9b5[m Make match cards fixed height with scrollable content
+[33m7b9d766[m Optimize question transition speed by processing UI updates before API calls
+[33mb6a4313[m Rewrite question answering algorithm to remove answered questions and show completion message only after all questions are answered
+[33mffdecd4[m Make question card fixed height with centered text and block-specific color
+[33m57c5f74[m Add progress indicators to question block and remove counter and back arrow
+[33m95c6dbf[m Disable page navigation by swipe while keeping card swipe functionality
+[33m40a6124[m Add swipe functionality to skip questions without answering
+[33m04b69f2[m Remove swipe navigation, keep only indicator navigation
+[33m96a1cd5[m Add ability to reset block answers and improve completed block UI
+[33mf2da29e[m Fix bottom menu symmetry and stability during swipe
+[33md4fc2ce[m Redesign bottom menu with icon-only navigation
+[33m7ea0fa1[m Add total questions count to matching desires display
+[33mc2bcdaa[m Implement infinite carousel for match cards
+[33m896c194[m Redesign pagination indicators with Apple-inspired minimalist style
+[33m85d5a65[m Fix indicators display with inline styles for guaranteed visibility
+[33m5daf53c[m Fix progress indicators display with improved structure and visibility
+[33madb25a9[m Redesign match indicators and clean up interface
+[33m3b39d74[m Enhance progress indicators with vibrant romantic colors and animation
+[33m0acc4ae[m Add progress indicators for match cards
+[33mcf6c84b[m Fix swipe conflict between MatchSwiper and page navigation
+[33m36e3d56[m Fix swipe error in MatchSwiper component
+[33m40d88a2[m Redesign pair page with accordion and block-based matching desires view
+[33mb6efdcf[m Update matching desires display to show question text instead of practice name
+[33m78e9775[m Update matching algorithm to only consider exact matches (yes-yes or maybe-maybe)
+[33m1b763cc[m Add completion animation with hearts after answering the last question in a block
+[33md7de086[m Optimize question answering experience with instant UI updates and animations
+[33m2de40f0[m Fix TypeError in setupHeader function by adding checks for setTitle method
+[33m1ba0f3e[m Add Telegram WebApp BackButton and header management
+[33m3e45fb2[m Add cache invalidation after answering questions to update counters
+[33m4cd935f[m Add auto-refresh and redirect after clearing answers
+[33m2ef2d7e[m Fix TypeError in block page by adding comprehensive null checks and validation for currentQuestion
+[33m860cd1e[m Fix TypeError in block page by adding null checks for currentQuestion
+[33ma35af4c[m Fix React error #310 in Questions component by reordering hooks
+[33mdee5438[m Fix React error #310 in LoadingScreen component
+[33m6c77c2c[m Fix React error #310 in BlocksList component
+[33m72a1f7b[m Fix React error #310 by updating Link component usage
+[33m1f2cf61[m Fix React error #310 by updating Link component usage
+[33m772e7bf[m Add error handling and debugging tools for Telegram WebApp
+[33ma466345[m Fix client-side exception by improving error handling and adding safety checks
+[33mbf0b866[m Fix duplicate menu item and add caching for pair page
+[33ma172966[m Add React Query for data caching and optimization
+[33medf3128[m Add clear all answers button to settings page
+[33mff62331[m Add user progress tracking to blocks and filter answered questions
+[33mf27f0fa[m Improve active menu item highlighting with larger icons and better visual contrast
+[33mf03b5c6[m Improve navigation UI with enhanced active menu item highlighting and swipe gestures
+[33m81cc749[m Fix build error by removing non-existent QuestionCard import
+[33m29f0fd2[m Remove user
