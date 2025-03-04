@@ -1,0 +1,42 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t my-shadow5 .
+
+      - name: Save Docker image
+        run: docker save my-shadow5 > my-shadow5.tar
+
+      - name: Copy Docker image to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "my-shadow5.tar"
+          target: "~/"
+
+      - name: Deploy Docker image on VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker load < ~/my-shadow5.tar
+            docker stop my-shadow5 || true
+            docker rm my-shadow5 || true
+            docker run -d --name my-shadow5 -p 3000:3000 --env-file ~/.env my-shadow5
+            rm ~/my-shadow5.tar 
